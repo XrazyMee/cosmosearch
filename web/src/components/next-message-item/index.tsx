@@ -21,7 +21,7 @@ import { IMessage } from '@/pages/chat/interface';
 import { isEmpty } from 'lodash';
 import { Atom, ChevronDown, ChevronUp } from 'lucide-react';
 import MarkdownContent from '../next-markdown-content';
-import { RAGFlowAvatar } from '../ragflow-avatar';
+import { CosmoSearchAvatar } from '../cosmosearch-avatar';
 import { useTheme } from '../theme-provider';
 import { Button } from '../ui/button';
 import { AssistantGroupButton, UserGroupButton } from './group-button';
@@ -131,9 +131,9 @@ function MessageItem({
         >
           {visibleAvatar &&
             (item.role === MessageType.User ? (
-              <RAGFlowAvatar avatar={avatar ?? '/logo.svg'} />
+              <CosmoSearchAvatar avatar={avatar ?? '/logo.svg'} />
             ) : avatarDialog || agentName ? (
-              <RAGFlowAvatar
+              <CosmoSearchAvatar
                 avatar={avatarDialog as string}
                 name={agentName}
                 isPerson

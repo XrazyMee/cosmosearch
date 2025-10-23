@@ -94,6 +94,11 @@ export default {
       search: 'Search',
       welcome: 'Welcome to',
       dataset: 'Dataset',
+      literatureSearch: 'Literature Search',
+      cosmosearch: 'CosmoSearch',
+      heroTitle: 'Next-Generation AI Search Platform',
+      heroDescription: 'Leverage advanced AI technologies to provide smarter and more accurate literature search and knowledge discovery experiences',
+      getStarted: 'Get Started',
     },
     knowledgeList: {
       welcome: 'Welcome back',
@@ -101,6 +106,11 @@ export default {
       createKnowledgeBase: 'Create Dataset',
       name: 'Name',
       namePlaceholder: 'Please input name.',
+      permission: 'Permission',
+      permissionPlaceholder: 'Please select permission',
+      permissionMyself: 'Myself',
+      permissionTeam: 'Team',
+      permissionPublic: 'Public',
       doc: 'Docs',
       searchKnowledgePlaceholder: 'Search',
       noMoreData: `That's all. Nothing more.`,
@@ -278,8 +288,8 @@ export default {
       tocExtractionTip:
         " For existing chunks, generate a hierarchical table of contents (one directory per file). During queries, when Directory Enhancement is activated, the system will use a large model to determine which directory items are relevant to the user's question, thereby identifying the relevant chunks.",
       deleteGenerateModalContent: `
-        <p>Deleting the generated <strong class='text-text-primary'>{{type}}</strong>  results 
-        will remove all derived entities and relationships from this dataset. 
+        <p>Deleting the generated <strong class='text-text-primary'>{{type}}</strong>  results
+        will remove all derived entities and relationships from this dataset.
         Your original files will remain intact.<p>
         <br/>
         Do you want to continue?
@@ -1810,15 +1820,15 @@ Important structured information may include: names, dates, locations, events, k
       </ul>`,
       changeStepModalTitle: 'Step Switch Warning',
       changeStepModalContent: `
-      <p>You are currently editing the results of this stage.</p> 
-      <p>If you switch to a later stage, your changes will be lost. </p> 
+      <p>You are currently editing the results of this stage.</p>
+      <p>If you switch to a later stage, your changes will be lost. </p>
       <p>To keep them, please click Rerun to re-run the current stage.</p> `,
       changeStepModalConfirmText: 'Switch Anyway',
       changeStepModalCancelText: 'Cancel',
       unlinkPipelineModalTitle: 'Unlink Ingestion pipeline',
       unlinkPipelineModalContent: `
-      <p>Once unlinked, this Dataset will no longer be connected to the current Ingestion pipeline.</p> 
-      <p>Files that are already being parsed  will continue until completion</p> 
+      <p>Once unlinked, this Dataset will no longer be connected to the current Ingestion pipeline.</p>
+      <p>Files that are already being parsed  will continue until completion</p>
       <p>Files that are not yet parsed will no longer be processed</p> <br/>
       <p>Are you sure you want to proceed?</p> `,
       unlinkPipelineModalConfirmText: 'Unlink',

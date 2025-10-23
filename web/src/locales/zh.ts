@@ -87,6 +87,12 @@ export default {
       search: '搜索',
       welcome: '欢迎来到',
       dataset: '知识库',
+      literatureSearch: '文献检索',
+      Root: '首页',
+      cosmosearch: 'CosmoSearch',
+      heroTitle: '下一代AI搜索平台',
+      heroDescription: '利用先进的人工智能技术，为您提供更智能、更准确的文献检索和知识发现体验',
+      getStarted: '开始使用',
     },
     knowledgeList: {
       welcome: '欢迎回来',
@@ -94,6 +100,11 @@ export default {
       createKnowledgeBase: '创建知识库',
       name: '名称',
       namePlaceholder: '请输入名称',
+      permission: '权限',
+      permissionPlaceholder: '请选择权限',
+      permissionMyself: '个人',
+      permissionTeam: '团队',
+      permissionPublic: '公开',
       doc: '文档',
       searchKnowledgePlaceholder: '搜索',
       noMoreData: '没有更多数据了',
@@ -1704,8 +1715,8 @@ Tokenizer 会根据所选方式将内容存储为对应的数据结构。`,
       changeStepModalCancelText: '取消',
       unlinkPipelineModalTitle: '解绑pipeline',
       unlinkPipelineModalContent: `
-      <p>一旦取消链接，该数据集将不再连接到当前数据管道。</p> 
-      <p>正在解析的文件将继续解析，直到完成。</p> 
+      <p>一旦取消链接，该数据集将不再连接到当前数据管道。</p>
+      <p>正在解析的文件将继续解析，直到完成。</p>
       <p>尚未解析的文件将不再被处理。</p> <br/>
       <p>你确定要继续吗?</p> `,
       unlinkPipelineModalConfirmText: '解绑',

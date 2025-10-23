@@ -257,19 +257,13 @@ class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
                 return super().execute_sql(sql, params, commit)
             except (OperationalError, InterfaceError) as e:
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection']
-                should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    (str(e) in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
-                )
+                error_messages = ["", "Lost connection"]
+                should_retry = (hasattr(e, "args") and e.args and e.args[0] in error_codes) or (str(e) in error_messages) or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"Database connection issue (attempt {attempt+1}/{self.max_retries}): {e}"
-                    )
+                    logging.warning(f"Database connection issue (attempt {attempt + 1}/{self.max_retries}): {e}")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     logging.error(f"DB execution failure: {e}")
                     raise
@@ -295,20 +289,14 @@ class RetryingPooledMySQLDatabase(PooledMySQLDatabase):
                 return super().begin()
             except (OperationalError, InterfaceError) as e:
                 error_codes = [2013, 2006]
-                error_messages = ['', 'Lost connection']
+                error_messages = ["", "Lost connection"]
 
-                should_retry = (
-                    (hasattr(e, 'args') and e.args and e.args[0] in error_codes) or
-                    (str(e) in error_messages) or
-                    (hasattr(e, '__class__') and e.__class__.__name__ == 'InterfaceError')
-                )
+                should_retry = (hasattr(e, "args") and e.args and e.args[0] in error_codes) or (str(e) in error_messages) or (hasattr(e, "__class__") and e.__class__.__name__ == "InterfaceError")
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"Lost connection during transaction (attempt {attempt+1}/{self.max_retries})"
-                    )
+                    logging.warning(f"Lost connection during transaction (attempt {attempt + 1}/{self.max_retries})")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     raise
 
@@ -331,17 +319,14 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
                 # 08006: connection_failure
                 # 08003: connection_does_not_exist
                 # 08000: connection_exception
-                error_messages = ['connection', 'server closed', 'connection refused', 
-                                'no connection to the server', 'terminating connection']
-                
+                error_messages = ["connection", "server closed", "connection refused", "no connection to the server", "terminating connection"]
+
                 should_retry = any(msg in str(e).lower() for msg in error_messages)
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"PostgreSQL connection issue (attempt {attempt+1}/{self.max_retries}): {e}"
-                    )
+                    logging.warning(f"PostgreSQL connection issue (attempt {attempt + 1}/{self.max_retries}): {e}")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     logging.error(f"PostgreSQL execution failure: {e}")
                     raise
@@ -364,17 +349,14 @@ class RetryingPooledPostgresqlDatabase(PooledPostgresqlDatabase):
             try:
                 return super().begin()
             except (OperationalError, InterfaceError) as e:
-                error_messages = ['connection', 'server closed', 'connection refused',
-                                'no connection to the server', 'terminating connection']
-                
+                error_messages = ["connection", "server closed", "connection refused", "no connection to the server", "terminating connection"]
+
                 should_retry = any(msg in str(e).lower() for msg in error_messages)
 
                 if should_retry and attempt < self.max_retries:
-                    logging.warning(
-                        f"PostgreSQL connection lost during transaction (attempt {attempt+1}/{self.max_retries})"
-                    )
+                    logging.warning(f"PostgreSQL connection lost during transaction (attempt {attempt + 1}/{self.max_retries})")
                     self._handle_connection_loss()
-                    time.sleep(self.retry_delay * (2 ** attempt))
+                    time.sleep(self.retry_delay * (2**attempt))
                 else:
                     raise
 
@@ -394,15 +376,13 @@ class BaseDataBase:
     def __init__(self):
         database_config = settings.DATABASE.copy()
         db_name = database_config.pop("name")
-        
+
         pool_config = {
-            'max_retries': 5,
-            'retry_delay': 1,
+            "max_retries": 5,
+            "retry_delay": 1,
         }
         database_config.update(pool_config)
-        self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(
-            db_name, **database_config
-        )
+        self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(db_name, **database_config)
         # self.database_connection = PooledDatabase[settings.DATABASE_TYPE.upper()].value(db_name, **database_config)
         logging.info("init database on cluster mode successfully")
 
@@ -1018,6 +998,73 @@ class Search(DataBaseModel):
         db_table = "search"
 
 
+class PaperSurveyDownloadRecord(DataBaseModel):
+    """
+    论文综述下载记录
+    """
+
+    id = CharField(primary_key=True, default=utils.get_uuid)
+    tenant_id = CharField()
+    user_id = CharField()
+    survey_record_id = CharField()  # 关联的综述记录ID
+    download_format = CharField(default="docx")  # 下载格式
+    created_at = BigIntegerField(default=utils.current_timestamp)
+
+    class Meta:
+        db_table = "paper_survey_download_record"
+
+
+class PaperSearchRecord(DataBaseModel):
+    """
+    论文检索记录
+    """
+
+    id = CharField(primary_key=True, default=utils.get_uuid)
+    tenant_id = CharField()
+    user_id = CharField()
+    query = LongTextField()  # 用户查询
+    keywords = LongTextField()  # 提取的关键词（JSON格式）
+    search_results = LongTextField()  # 检索结果（JSON格式）
+    result_count = IntegerField(default=0)  # 结果数量
+    created_at = BigIntegerField(default=utils.current_timestamp)
+    updated_at = BigIntegerField(default=utils.current_timestamp)
+
+    class Meta:
+        db_table = "paper_search_record"
+
+
+class PaperSurveyRecord(DataBaseModel):
+    """
+    论文综述生成记录
+    """
+
+    id = CharField(primary_key=True, default=utils.get_uuid)
+    tenant_id = CharField()
+    user_id = CharField()
+    search_record_id = CharField()  # 关联的检索记录ID
+    survey_content = LongTextField()  # 综述内容
+    survey_title = LongTextField()  # 综述标题
+    survey_papers = LongTextField(null=True)  # 综述相关的文献列表(JSON格式)
+    status = CharField(default="pending")  # 状态: pending, processing, completed, failed, cancelled
+
+    # 进度管理字段
+    progress = FloatField(default=0, index=True)  # 0-1之间的进度值
+    progress_msg = TextField(null=True, default="")  # 进度详细信息
+
+    # 任务关联字段
+    task_id = CharField(max_length=32, null=True, index=True)  # 关联Task表的task_id
+
+    # 处理时间字段
+    process_begin_at = DateTimeField(null=True, index=True)  # 开始处理时间
+    process_duration = FloatField(default=0)  # 处理耗时（秒）
+
+    created_at = BigIntegerField(default=utils.current_timestamp)
+    updated_at = BigIntegerField(default=utils.current_timestamp)
+
+    class Meta:
+        db_table = "paper_survey_record"
+
+
 class PipelineOperationLog(DataBaseModel):
     id = CharField(max_length=32, primary_key=True)
     document_id = CharField(max_length=32, index=True)
@@ -1210,6 +1257,27 @@ def migrate_db():
         pass
     try:
         migrate(migrator.alter_column_type("tenant_llm", "api_key", TextField(null=True, help_text="API KEY")))
+    except Exception:
+        pass
+    # 为 PaperSurveyRecord 表添加缺失的字段
+    try:
+        migrate(migrator.add_column("paper_survey_record", "progress", FloatField(default=0, index=True)))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("paper_survey_record", "progress_msg", TextField(null=True, default="")))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("paper_survey_record", "task_id", CharField(max_length=32, null=True, index=True)))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("paper_survey_record", "process_begin_at", DateTimeField(null=True, index=True)))
+    except Exception:
+        pass
+    try:
+        migrate(migrator.add_column("paper_survey_record", "process_duration", FloatField(default=0)))
     except Exception:
         pass
     logging.disable(logging.NOTSET)

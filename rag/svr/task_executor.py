@@ -13,6 +13,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 import concurrent
+
 # from beartype import BeartypeConf
 # from beartype.claw import beartype_all  # <-- you didn't sign up for this
 # beartype_all(conf=BeartypeConf(violation_type=UserWarning))    # <-- emit warnings from all code
@@ -56,10 +57,10 @@ from api.db.services.llm_service import LLMBundle
 from api.db.services.task_service import TaskService, has_canceled, CANVAS_DEBUG_DOC_ID, GRAPH_RAPTOR_FAKE_DOC_ID
 from api.db.services.file2document_service import File2DocumentService
 from api import settings
+from api.utils import current_timestamp
 from api.versions import get_ragflow_version
 from api.db.db_models import close_connection
-from rag.app import laws, paper, presentation, manual, qa, table, book, resume, picture, naive, one, audio, \
-    email, tag
+from rag.app import laws, paper, presentation, manual, qa, table, book, resume, picture, naive, one, audio, email, tag
 from rag.nlp import search, rag_tokenizer, add_positions
 from rag.raptor import RecursiveAbstractiveProcessing4TreeOrganizedRetrieval as Raptor
 from rag.settings import DOC_MAXIMUM_SIZE, DOC_BULK_SIZE, EMBEDDING_BATCH_SIZE, SVR_CONSUMER_GROUP_NAME, get_svr_queue_name, get_svr_queue_names, print_rag_settings, TAG_FLD, PAGERANK_FLD
@@ -86,11 +87,11 @@ FACTORY = {
     ParserType.AUDIO.value: audio,
     ParserType.EMAIL.value: email,
     ParserType.KG.value: naive,
-    ParserType.TAG.value: tag
+    ParserType.TAG.value: tag,
 }
 
 TASK_TYPE_TO_PIPELINE_TASK_TYPE = {
-    "dataflow" : PipelineTaskType.PARSE,
+    "dataflow": PipelineTaskType.PARSE,
     "raptor": PipelineTaskType.RAPTOR,
     "graphrag": PipelineTaskType.GRAPH_RAG,
     "mindmap": PipelineTaskType.MINDMAP,
@@ -108,15 +109,15 @@ FAILED_TASKS = 0
 
 CURRENT_TASKS = {}
 
-MAX_CONCURRENT_TASKS = int(os.environ.get('MAX_CONCURRENT_TASKS', "5"))
-MAX_CONCURRENT_CHUNK_BUILDERS = int(os.environ.get('MAX_CONCURRENT_CHUNK_BUILDERS', "1"))
-MAX_CONCURRENT_MINIO = int(os.environ.get('MAX_CONCURRENT_MINIO', '10'))
+MAX_CONCURRENT_TASKS = int(os.environ.get("MAX_CONCURRENT_TASKS", "5"))
+MAX_CONCURRENT_CHUNK_BUILDERS = int(os.environ.get("MAX_CONCURRENT_CHUNK_BUILDERS", "1"))
+MAX_CONCURRENT_MINIO = int(os.environ.get("MAX_CONCURRENT_MINIO", "10"))
 task_limiter = trio.Semaphore(MAX_CONCURRENT_TASKS)
 chunk_limiter = trio.CapacityLimiter(MAX_CONCURRENT_CHUNK_BUILDERS)
 embed_limiter = trio.CapacityLimiter(MAX_CONCURRENT_CHUNK_BUILDERS)
 minio_limiter = trio.CapacityLimiter(MAX_CONCURRENT_MINIO)
 kg_limiter = trio.CapacityLimiter(2)
-WORKER_HEARTBEAT_TIMEOUT = int(os.environ.get('WORKER_HEARTBEAT_TIMEOUT', '120'))
+WORKER_HEARTBEAT_TIMEOUT = int(os.environ.get("WORKER_HEARTBEAT_TIMEOUT", "120"))
 stop_event = threading.Event()
 
 
@@ -143,11 +144,13 @@ def start_tracemalloc_and_snapshot(signum, frame):
     snapshot.dump(snapshot_file)
     current, peak = tracemalloc.get_traced_memory()
     if sys.platform == "win32":
-        import  psutil
+        import psutil
+
         process = psutil.Process()
         max_rss = process.memory_info().rss / 1024
     else:
         import resource
+
         max_rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     logging.info(f"taken snapshot {snapshot_file}. max RSS={max_rss / 1000:.2f} MB, current memory usage: {current / 10**6:.2f} MB, Peak memory usage: {peak / 10**6:.2f} MB")
 
@@ -226,9 +229,14 @@ async def collect():
         return None, None
 
     canceled = False
-    if msg.get("doc_id", "") in [GRAPH_RAPTOR_FAKE_DOC_ID, CANVAS_DEBUG_DOC_ID]:
+    task_type = msg.get("task_type", "")
+
+    # 对于 paper_survey 任务,直接使用消息内容,不需要从数据库查询
+    if task_type == "paper_survey":
         task = msg
-        if task["task_type"] in ["graphrag", "raptor", "mindmap"]:
+    elif msg.get("doc_id", "") in [GRAPH_RAPTOR_FAKE_DOC_ID, CANVAS_DEBUG_DOC_ID]:
+        task = msg
+        if task_type in ["graphrag", "raptor", "mindmap"]:
             task = TaskService.get_task(msg["id"], msg["doc_ids"])
             task["doc_id"] = msg["doc_id"]
             task["doc_ids"] = msg.get("doc_ids", []) or []
@@ -244,7 +252,6 @@ async def collect():
         redis_msg.ack()
         return None, None
 
-    task_type = msg.get("task_type", "")
     task["task_type"] = task_type
     if task_type[:8] == "dataflow":
         task["tenant_id"] = msg["tenant_id"]
@@ -257,11 +264,10 @@ async def get_storage_binary(bucket, name):
     return await trio.to_thread.run_sync(lambda: STORAGE_IMPL.get(bucket, name))
 
 
-@timeout(60*80, 1)
+@timeout(60 * 80, 1)
 async def build_chunks(task, progress_callback):
     if task["size"] > DOC_MAXIMUM_SIZE:
-        set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" %
-                                              (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
+        set_progress(task["id"], prog=-1, msg="File size exceeds( <= %dMb )" % (int(DOC_MAXIMUM_SIZE / 1024 / 1024)))
         return []
 
     chunker = FACTORY[task["parser_id"].lower()]
@@ -272,8 +278,7 @@ async def build_chunks(task, progress_callback):
         logging.info("From minio({}) {}/{}".format(timer() - st, task["location"], task["name"]))
     except TimeoutError:
         progress_callback(-1, "Internal server error: Fetch file from minio timeout. Could you try it again.")
-        logging.exception(
-            "Minio {}/{} got timeout: Fetch file from minio timeout.".format(task["location"], task["name"]))
+        logging.exception("Minio {}/{} got timeout: Fetch file from minio timeout.".format(task["location"], task["name"]))
         raise
     except Exception as e:
         if re.search("(No such file|not found)", str(e)):
@@ -285,9 +290,19 @@ async def build_chunks(task, progress_callback):
 
     try:
         async with chunk_limiter:
-            cks = await trio.to_thread.run_sync(lambda: chunker.chunk(task["name"], binary=binary, from_page=task["from_page"],
-                                to_page=task["to_page"], lang=task["language"], callback=progress_callback,
-                                kb_id=task["kb_id"], parser_config=task["parser_config"], tenant_id=task["tenant_id"]))
+            cks = await trio.to_thread.run_sync(
+                lambda: chunker.chunk(
+                    task["name"],
+                    binary=binary,
+                    from_page=task["from_page"],
+                    to_page=task["to_page"],
+                    lang=task["language"],
+                    callback=progress_callback,
+                    kb_id=task["kb_id"],
+                    parser_config=task["parser_config"],
+                    tenant_id=task["tenant_id"],
+                )
+            )
         logging.info("Chunking({}) {}/{} done".format(timer() - st, task["location"], task["name"]))
     except TaskCanceledException:
         raise
@@ -297,10 +312,7 @@ async def build_chunks(task, progress_callback):
         raise
 
     docs = []
-    doc = {
-        "doc_id": task["doc_id"],
-        "kb_id": str(task["kb_id"])
-    }
+    doc = {"doc_id": task["doc_id"], "kb_id": str(task["kb_id"])}
     if task["pagerank"]:
         doc[PAGERANK_FLD] = int(task["pagerank"])
     st = timer()
@@ -321,8 +333,7 @@ async def build_chunks(task, progress_callback):
             await image2id(d, partial(STORAGE_IMPL.put, tenant_id=task["tenant_id"]), d["id"], task["kb_id"])
             docs.append(d)
         except Exception:
-            logging.exception(
-                "Saving image of chunk {}/{}/{} got exception".format(task["location"], task["name"], d["id"]))
+            logging.exception("Saving image of chunk {}/{}/{} got exception".format(task["location"], task["name"], d["id"]))
             raise
 
     async with trio.open_nursery() as nursery:
@@ -347,6 +358,7 @@ async def build_chunks(task, progress_callback):
                 d["important_kwd"] = cached.split(",")
                 d["important_tks"] = rag_tokenizer.tokenize(" ".join(d["important_kwd"]))
             return
+
         async with trio.open_nursery() as nursery:
             for d in docs:
                 nursery.start_soon(doc_keyword_extraction, chat_mdl, d, task["parser_config"]["auto_keywords"])
@@ -366,6 +378,7 @@ async def build_chunks(task, progress_callback):
             if cached:
                 d["question_kwd"] = cached.split("\n")
                 d["question_tks"] = rag_tokenizer.tokenize("\n".join(d["question_kwd"]))
+
         async with trio.open_nursery() as nursery:
             for d in docs:
                 nursery.start_soon(doc_question_proposal, chat_mdl, d, task["parser_config"]["auto_questions"])
@@ -402,9 +415,9 @@ async def build_chunks(task, progress_callback):
         async def doc_content_tagging(chat_mdl, d, topn_tags):
             cached = get_llm_cache(chat_mdl.llm_name, d["content_with_weight"], all_tags, {"topn": topn_tags})
             if not cached:
-                picked_examples = random.choices(examples, k=2) if len(examples)>2 else examples
+                picked_examples = random.choices(examples, k=2) if len(examples) > 2 else examples
                 if not picked_examples:
-                    picked_examples.append({"content": "This is an example", TAG_FLD: {'example': 1}})
+                    picked_examples.append({"content": "This is an example", TAG_FLD: {"example": 1}})
                 async with chat_limiter:
                     cached = await trio.to_thread.run_sync(lambda: content_tagging(chat_mdl, d["content_with_weight"], all_tags, picked_examples, topn=topn_tags))
                 if cached:
@@ -412,6 +425,7 @@ async def build_chunks(task, progress_callback):
             if cached:
                 set_llm_cache(chat_mdl.llm_name, d["content_with_weight"], cached, all_tags, {"topn": topn_tags})
                 d[TAG_FLD] = json.loads(cached)
+
         async with trio.open_nursery() as nursery:
             for d in docs_to_tag:
                 nursery.start_soon(doc_content_tagging, chat_mdl, d, topn_tags)
@@ -423,21 +437,24 @@ async def build_chunks(task, progress_callback):
 def build_TOC(task, docs, progress_callback):
     progress_callback(msg="Start to generate table of content ...")
     chat_mdl = LLMBundle(task["tenant_id"], LLMType.CHAT, llm_name=task["llm_id"], lang=task["language"])
-    docs = sorted(docs, key=lambda d:(
-        d.get("page_num_int", 0)[0] if isinstance(d.get("page_num_int", 0), list) else d.get("page_num_int", 0),
-        d.get("top_int", 0)[0] if isinstance(d.get("top_int", 0), list) else d.get("top_int", 0)
-    ))
+    docs = sorted(
+        docs,
+        key=lambda d: (
+            d.get("page_num_int", 0)[0] if isinstance(d.get("page_num_int", 0), list) else d.get("page_num_int", 0),
+            d.get("top_int", 0)[0] if isinstance(d.get("top_int", 0), list) else d.get("top_int", 0),
+        ),
+    )
     toc: list[dict] = trio.run(run_toc_from_text, [d["content_with_weight"] for d in docs], chat_mdl, progress_callback)
-    logging.info("------------ T O C -------------\n"+json.dumps(toc, ensure_ascii=False, indent='  '))
+    logging.info("------------ T O C -------------\n" + json.dumps(toc, ensure_ascii=False, indent="  "))
     ii = 0
     while ii < len(toc):
         try:
             idx = int(toc[ii]["chunk_id"])
             del toc[ii]["chunk_id"]
             toc[ii]["ids"] = [docs[idx]["id"]]
-            if ii == len(toc) -1:
+            if ii == len(toc) - 1:
                 break
-            for jj in range(idx+1, int(toc[ii+1]["chunk_id"])+1):
+            for jj in range(idx + 1, int(toc[ii + 1]["chunk_id"]) + 1):
                 toc[ii]["ids"].append(docs[jj]["id"])
         except Exception as e:
             logging.exception(e)
@@ -474,19 +491,19 @@ async def embedding(docs, mdl, parser_config=None, callback=None):
 
     tk_count = 0
     if len(tts) == len(cnts):
-        vts, c = await trio.to_thread.run_sync(lambda: mdl.encode(tts[0: 1]))
+        vts, c = await trio.to_thread.run_sync(lambda: mdl.encode(tts[0:1]))
         tts = np.concatenate([vts for _ in range(len(tts))], axis=0)
         tk_count += c
 
     @timeout(60)
     def batch_encode(txts):
         nonlocal mdl
-        return mdl.encode([truncate(c, mdl.max_length-10) for c in txts])
+        return mdl.encode([truncate(c, mdl.max_length - 10) for c in txts])
 
     cnts_ = np.array([])
     for i in range(0, len(cnts), EMBEDDING_BATCH_SIZE):
         async with embed_limiter:
-            vts, c = await trio.to_thread.run_sync(lambda: batch_encode(cnts[i: i + EMBEDDING_BATCH_SIZE]))
+            vts, c = await trio.to_thread.run_sync(lambda: batch_encode(cnts[i : i + EMBEDDING_BATCH_SIZE]))
         if len(cnts_) == 0:
             cnts_ = vts
         else:
@@ -494,12 +511,11 @@ async def embedding(docs, mdl, parser_config=None, callback=None):
         tk_count += c
         callback(prog=0.7 + 0.2 * (i + 1) / len(cnts), msg="")
     cnts = cnts_
-    filename_embd_weight = parser_config.get("filename_embd_weight", 0.1) # due to the db support none value
+    filename_embd_weight = parser_config.get("filename_embd_weight", 0.1)  # due to the db support none value
     if not filename_embd_weight:
         filename_embd_weight = 0.1
     title_w = float(filename_embd_weight)
-    vects = (title_w * tts + (1 - title_w) *
-             cnts) if len(tts) == len(cnts) else cnts
+    vects = (title_w * tts + (1 - title_w) * cnts) if len(tts) == len(cnts) else cnts
 
     assert len(vects) == len(docs)
     vector_size = 0
@@ -554,13 +570,15 @@ async def run_dataflow(task: dict):
             e, kb = KnowledgebaseService.get_by_id(task["kb_id"])
             embedding_id = kb.embd_id
             embedding_model = LLMBundle(task["tenant_id"], LLMType.EMBEDDING, llm_name=embedding_id)
+
             @timeout(60)
             def batch_encode(txts):
                 nonlocal embedding_model
                 return embedding_model.encode([truncate(c, embedding_model.max_length - 10) for c in txts])
+
             vects = np.array([])
             texts = [o.get("questions", o.get("summary", o["text"])) for o in chunks]
-            delta = 0.20/(len(texts)//EMBEDDING_BATCH_SIZE+1)
+            delta = 0.20 / (len(texts) // EMBEDDING_BATCH_SIZE + 1)
             prog = 0.8
             for i in range(0, len(texts), EMBEDDING_BATCH_SIZE):
                 async with embed_limiter:
@@ -571,8 +589,8 @@ async def run_dataflow(task: dict):
                     vects = np.concatenate((vects, vts), axis=0)
                 embedding_token_consumption += c
                 prog += delta
-                if i % (len(texts)//EMBEDDING_BATCH_SIZE/100+1) == 1:
-                    set_progress(task_id, prog=prog, msg=f"{i+1} / {len(texts)//EMBEDDING_BATCH_SIZE}")
+                if i % (len(texts) // EMBEDDING_BATCH_SIZE / 100 + 1) == 1:
+                    set_progress(task_id, prog=prog, msg=f"{i + 1} / {len(texts) // EMBEDDING_BATCH_SIZE}")
 
             assert len(vects) == len(chunks)
             for i, ck in enumerate(chunks):
@@ -583,8 +601,8 @@ async def run_dataflow(task: dict):
             PipelineOperationLogService.create(document_id=doc_id, pipeline_id=dataflow_id, task_type=PipelineTaskType.PARSE, dsl=str(pipeline))
             return
 
-
     metadata = {}
+
     def dict_update(meta):
         nonlocal metadata
         if not meta:
@@ -664,9 +682,9 @@ async def run_dataflow(task: dict):
 
     time_cost = timer() - start_ts
     task_time_cost = timer() - task_start_ts
-    set_progress(task_id, prog=1., msg="Indexing done ({:.2f}s). Task done ({:.2f}s)".format(time_cost, task_time_cost))
+    set_progress(task_id, prog=1.0, msg="Indexing done ({:.2f}s). Task done ({:.2f}s)".format(time_cost, task_time_cost))
     DocumentService.increment_chunk_num(doc_id, task_dataset_id, embedding_token_consumption, len(chunks), task_time_cost)
-    logging.info("[Done], chunks({}), token({}), elapsed:{:.2f}".format(len(chunks),  embedding_token_consumption, task_time_cost))
+    logging.info("[Done], chunks({}), token({}), elapsed:{:.2f}".format(len(chunks), embedding_token_consumption, task_time_cost))
     PipelineOperationLogService.create(document_id=doc_id, pipeline_id=dataflow_id, task_type=PipelineTaskType.PARSE, dsl=str(pipeline))
 
 
@@ -677,11 +695,9 @@ async def run_raptor_for_kb(row, kb_parser_config, chat_mdl, embd_mdl, vector_si
     raptor_config = kb_parser_config.get("raptor", {})
 
     chunks = []
-    vctr_nm = "q_%d_vec"%vector_size
+    vctr_nm = "q_%d_vec" % vector_size
     for doc_id in doc_ids:
-        for d in settings.retriever.chunk_list(doc_id, row["tenant_id"], [str(row["kb_id"])],
-                                                 fields=["content_with_weight", vctr_nm],
-                                                 sort_by_position=True):
+        for d in settings.retriever.chunk_list(doc_id, row["tenant_id"], [str(row["kb_id"])], fields=["content_with_weight", vctr_nm], sort_by_position=True):
             chunks.append((d["content_with_weight"], np.array(d[vctr_nm])))
 
     raptor = Raptor(
@@ -694,12 +710,7 @@ async def run_raptor_for_kb(row, kb_parser_config, chat_mdl, embd_mdl, vector_si
     )
     original_length = len(chunks)
     chunks = await raptor(chunks, kb_parser_config["raptor"]["random_seed"], callback)
-    doc = {
-        "doc_id": fake_doc_id,
-        "kb_id": [str(row["kb_id"])],
-        "docnm_kwd": row["name"],
-        "title_tks": rag_tokenizer.tokenize(row["name"])
-    }
+    doc = {"doc_id": fake_doc_id, "kb_id": [str(row["kb_id"])], "docnm_kwd": row["name"], "title_tks": rag_tokenizer.tokenize(row["name"])}
     if row["pagerank"]:
         doc[PAGERANK_FLD] = int(row["pagerank"])
     res = []
@@ -729,7 +740,7 @@ async def delete_image(kb_id, chunk_id):
 
 async def insert_es(task_id, task_tenant_id, task_dataset_id, chunks, progress_callback):
     for b in range(0, len(chunks), DOC_BULK_SIZE):
-        doc_store_result = await trio.to_thread.run_sync(lambda: settings.docStoreConn.insert(chunks[b:b + DOC_BULK_SIZE], search.index_name(task_tenant_id), task_dataset_id))
+        doc_store_result = await trio.to_thread.run_sync(lambda: settings.docStoreConn.insert(chunks[b : b + DOC_BULK_SIZE], search.index_name(task_tenant_id), task_dataset_id))
         task_canceled = has_canceled(task_id)
         if task_canceled:
             progress_callback(-1, msg="Task has been canceled.")
@@ -740,7 +751,7 @@ async def insert_es(task_id, task_tenant_id, task_dataset_id, chunks, progress_c
             error_message = f"Insert chunk error: {doc_store_result}, please check log file and Elasticsearch/Infinity status!"
             progress_callback(-1, msg=error_message)
             raise Exception(error_message)
-        chunk_ids = [chunk["id"] for chunk in chunks[:b + DOC_BULK_SIZE]]
+        chunk_ids = [chunk["id"] for chunk in chunks[: b + DOC_BULK_SIZE]]
         chunk_ids_str = " ".join(chunk_ids)
         try:
             TaskService.update_chunk_ids(task_id, chunk_ids_str)
@@ -755,9 +766,138 @@ async def insert_es(task_id, task_tenant_id, task_dataset_id, chunks, progress_c
     return True
 
 
-@timeout(60*60*3, 1)
+async def handle_survey_task(task):
+    """处理论文综述生成任务
+
+    Args:
+        task: 任务字典，包含 survey_record, papers, task_id 等信息
+    """
+    task_id = task["id"]
+    survey_record = task["survey_record"]
+    papers = task["papers"]
+    survey_id = survey_record["id"]
+    tenant_id = task.get("tenant_id") or survey_record["tenant_id"]
+
+    from api.db.db_models import PaperSurveyRecord
+    from api.db.services.paper_search_service import PaperSearchService
+
+    try:
+        # 阶段1: 准备数据 (5%)
+        set_progress(task_id, prog=0.05, msg="正在准备论文数据...")
+
+        PaperSurveyRecord.update(status="processing", progress=0.05, progress_msg="正在准备数据").where(PaperSurveyRecord.id == survey_id).execute()
+
+        # 检查是否取消
+        if has_canceled(task_id):
+            raise TaskCanceledException("任务已取消")
+
+        # 阶段2: 构建提示词 (10%)
+        set_progress(task_id, prog=0.10, msg="正在构建综述提示词...")
+        survey_prompt = PaperSearchService._build_survey_prompt(papers)
+
+        PaperSurveyRecord.update(progress=0.10, progress_msg="已构建提示词").where(PaperSurveyRecord.id == survey_id).execute()
+
+        if has_canceled(task_id):
+            raise TaskCanceledException("任务已取消")
+
+        # 阶段3: 调用 LLM 生成 (10% - 90%)
+        set_progress(task_id, prog=0.20, msg="正在调用 LLM 生成综述...")
+
+        # 获取聊天模型
+        chat_mdl = LLMBundle(tenant_id, LLMType.CHAT)
+
+        # 准备消息
+        history = [{"role": "user", "content": survey_prompt}]
+        chat_params = {"temperature": 0.7, "max_tokens": 2048, "extra_body": {"enable_thinking": False}}
+
+        # 启动进度更新协程
+        stop_progress_update = trio.Event()
+
+        async def update_llm_progress():
+            """模拟 LLM 生成进度更新"""
+            try:
+                for i in range(3, 9):
+                    await trio.sleep(5)  # 每5秒更新一次
+                    if stop_progress_update.is_set():
+                        break
+                    if has_canceled(task_id):
+                        break
+                    progress = i * 0.1
+                    set_progress(task_id, prog=progress, msg=f"LLM 生成中... {int(progress * 100)}%")
+                    PaperSurveyRecord.update(progress=progress, progress_msg=f"生成中 {int(progress * 100)}%").where(PaperSurveyRecord.id == survey_id).execute()
+            except Exception as e:
+                logging.warning(f"进度更新协程异常: {str(e)}")
+
+        # 使用 nursery 并发执行 LLM 调用和进度更新
+        async with trio.open_nursery() as nursery:
+            # 启动进度更新协程
+            nursery.start_soon(update_llm_progress)
+
+            # 实际调用 LLM（在线程中执行以避免阻塞）
+            survey_content = await trio.to_thread.run_sync(lambda: chat_mdl.chat("", history, chat_params))
+
+            # 停止进度更新
+            stop_progress_update.set()
+            nursery.cancel_scope.cancel()
+
+        if has_canceled(task_id):
+            raise TaskCanceledException("任务已取消")
+
+        # 阶段4: 保存结果 (95% - 100%)
+        set_progress(task_id, prog=0.95, msg="正在保存综述结果...")
+
+        # 计算处理耗时
+        begin_at = datetime.fromisoformat(str(task["begin_at"]))
+        process_duration = (datetime.now() - begin_at).total_seconds()
+
+        # 保存papers数据为JSON
+        import json
+
+        papers_json = json.dumps(papers, ensure_ascii=False)
+
+        PaperSurveyRecord.update(
+            survey_content=survey_content,
+            survey_papers=papers_json,  # 保存文献列表
+            status="completed",
+            progress=1.0,
+            progress_msg="综述生成完成",
+            process_duration=process_duration,
+            updated_at=current_timestamp(),
+        ).where(PaperSurveyRecord.id == survey_id).execute()
+
+        # 更新 Task 完成
+        set_progress(task_id, prog=1.0, msg="综述生成完成")
+
+        logging.info(f"综述任务完成: task_id={task_id}, survey_id={survey_id}, duration={process_duration:.2f}s")
+
+    except TaskCanceledException:
+        # 任务被取消
+        logging.warning(f"综述任务被取消: task_id={task_id}, survey_id={survey_id}")
+        PaperSurveyRecord.update(status="cancelled", progress=-1, progress_msg="任务已取消", updated_at=current_timestamp()).where(PaperSurveyRecord.id == survey_id).execute()
+        set_progress(task_id, prog=-1, msg="任务已取消")
+
+    except Exception as e:
+        # 任务失败
+        error_msg = f"生成失败: {str(e)}"
+        logging.error(f"综述任务失败: task_id={task_id}, survey_id={survey_id}, error: {str(e)}")
+
+        set_progress(task_id, prog=-1, msg=error_msg)
+
+        PaperSurveyRecord.update(status="failed", progress=-1, progress_msg=error_msg, updated_at=current_timestamp()).where(PaperSurveyRecord.id == survey_id).execute()
+
+        raise
+    finally:
+        close_connection()
+
+
+@timeout(60 * 60 * 3, 1)
 async def do_handle_task(task):
     task_type = task.get("task_type", "")
+
+    # 处理论文综述生成任务
+    if task_type == "paper_survey":
+        await handle_survey_task(task)
+        return
 
     if task_type == "dataflow" and task.get("doc_id", "") == CANVAS_DEBUG_DOC_ID:
         await run_dataflow(task)
@@ -783,7 +923,7 @@ async def do_handle_task(task):
 
     # FIXME: workaround, Infinity doesn't support table parsing method, this check is to notify user
     lower_case_doc_engine = settings.DOC_ENGINE.lower()
-    if lower_case_doc_engine == 'infinity' and task['parser_id'].lower() == 'table':
+    if lower_case_doc_engine == "infinity" and task["parser_id"].lower() == "table":
         error_message = "Table parsing method is not supported by Infinity, please use other parsing methods or use Elasticsearch as the document engine."
         progress_callback(-1, msg=error_message)
         raise Exception(error_message)
@@ -799,14 +939,14 @@ async def do_handle_task(task):
         vts, _ = embedding_model.encode(["ok"])
         vector_size = len(vts[0])
     except Exception as e:
-        error_message = f'Fail to bind embedding model: {str(e)}'
+        error_message = f"Fail to bind embedding model: {str(e)}"
         progress_callback(-1, msg=error_message)
         logging.exception(error_message)
         raise
 
     init_kb(task, vector_size)
 
-    if task_type[:len("dataflow")] == "dataflow":
+    if task_type[: len("dataflow")] == "dataflow":
         await run_dataflow(task)
         return
 
@@ -830,7 +970,7 @@ async def do_handle_task(task):
                     },
                 }
             )
-            if not KnowledgebaseService.update_by_id(kb.id, {"parser_config":kb_parser_config}):
+            if not KnowledgebaseService.update_by_id(kb.id, {"parser_config": kb_parser_config}):
                 progress_callback(prog=-1.0, msg="Internal error: Invalid RAPTOR configuration")
                 return
 
@@ -871,10 +1011,9 @@ async def do_handle_task(task):
                     }
                 }
             )
-            if not KnowledgebaseService.update_by_id(kb.id, {"parser_config":kb_parser_config}):
+            if not KnowledgebaseService.update_by_id(kb.id, {"parser_config": kb_parser_config}):
                 progress_callback(prog=-1.0, msg="Internal error: Invalid GraphRAG configuration")
                 return
-
 
         graphrag_conf = kb_parser_config.get("graphrag", {})
         start_ts = timer()
@@ -907,7 +1046,7 @@ async def do_handle_task(task):
         chunks = await build_chunks(task, progress_callback)
         logging.info("Build document {}: {:.2f}s".format(task_document_name, timer() - start_ts))
         if not chunks:
-            progress_callback(1., msg=f"No chunk built from {task_document_name}")
+            progress_callback(1.0, msg=f"No chunk built from {task_document_name}")
             return
         progress_callback(msg="Generate {} chunks".format(len(chunks)))
         start_ts = timer()
@@ -923,7 +1062,7 @@ async def do_handle_task(task):
         logging.info(progress_message)
         progress_callback(msg=progress_message)
         if task["parser_id"].lower() == "naive" and task["parser_config"].get("toc_extraction", False):
-            toc_thread = executor.submit(build_TOC,task, chunks, progress_callback)
+            toc_thread = executor.submit(build_TOC, task, chunks, progress_callback)
 
     chunk_count = len(set([chunk["id"] for chunk in chunks]))
     start_ts = timer()
@@ -931,9 +1070,7 @@ async def do_handle_task(task):
     if not e:
         return
 
-    logging.info("Indexing doc({}), page({}-{}), chunks({}), elapsed: {:.2f}".format(task_document_name, task_from_page,
-                                                                                     task_to_page, len(chunks),
-                                                                                     timer() - start_ts))
+    logging.info("Indexing doc({}), page({}-{}), chunks({}), elapsed: {:.2f}".format(task_document_name, task_from_page, task_to_page, len(chunks), timer() - start_ts))
 
     DocumentService.increment_chunk_num(task_doc_id, task_dataset_id, token_count, chunk_count, 0)
 
@@ -949,10 +1086,7 @@ async def do_handle_task(task):
 
     task_time_cost = timer() - task_start_ts
     progress_callback(prog=1.0, msg="Task done ({:.2f}s)".format(task_time_cost))
-    logging.info(
-        "Chunk doc({}), page({}-{}), chunks({}), token({}), elapsed:{:.2f}".format(task_document_name, task_from_page,
-                                                                                   task_to_page, len(chunks),
-                                                                                   token_count, task_time_cost))
+    logging.info("Chunk doc({}), page({}-{}), chunks({}), token({}), elapsed:{:.2f}".format(task_document_name, task_from_page, task_to_page, len(chunks), token_count, task_time_cost))
 
 
 async def handle_task():
@@ -979,7 +1113,7 @@ async def handle_task():
             err_msg = str(e)
             while isinstance(e, exceptiongroup.ExceptionGroup):
                 e = e.exceptions[0]
-                err_msg += ' -- ' + str(e)
+                err_msg += " -- " + str(e)
             set_progress(task["id"], prog=-1, msg=f"[Exception]: {err_msg}")
         except Exception:
             pass
@@ -1007,16 +1141,18 @@ async def report_status():
                 LAG_TASKS = int(group_info.get("lag", 0))
 
             current = copy.deepcopy(CURRENT_TASKS)
-            heartbeat = json.dumps({
-                "name": CONSUMER_NAME,
-                "now": now.astimezone().isoformat(timespec="milliseconds"),
-                "boot_at": BOOT_AT,
-                "pending": PENDING_TASKS,
-                "lag": LAG_TASKS,
-                "done": DONE_TASKS,
-                "failed": FAILED_TASKS,
-                "current": current,
-            })
+            heartbeat = json.dumps(
+                {
+                    "name": CONSUMER_NAME,
+                    "now": now.astimezone().isoformat(timespec="milliseconds"),
+                    "boot_at": BOOT_AT,
+                    "pending": PENDING_TASKS,
+                    "lag": LAG_TASKS,
+                    "done": DONE_TASKS,
+                    "failed": FAILED_TASKS,
+                    "current": current,
+                }
+            )
             REDIS_CONN.zadd(CONSUMER_NAME, heartbeat, now.timestamp())
             logging.info(f"{CONSUMER_NAME} reported heartbeat: {heartbeat}")
 
@@ -1030,9 +1166,7 @@ async def report_status():
                 for consumer_name in task_executors:
                     if consumer_name == CONSUMER_NAME:
                         continue
-                    expired = REDIS_CONN.zcount(
-                        consumer_name, now.timestamp() - WORKER_HEARTBEAT_TIMEOUT, now.timestamp() + 10
-                    )
+                    expired = REDIS_CONN.zcount(consumer_name, now.timestamp() - WORKER_HEARTBEAT_TIMEOUT, now.timestamp() + 10)
                     if expired == 0:
                         logging.info(f"{consumer_name} expired, removed")
                         REDIS_CONN.srem("TASKEXE", consumer_name)
@@ -1060,13 +1194,13 @@ async def main():
 /___/_/ /_/\__, /\___/____/\__/_/\____/_/ /_/  /____/\___/_/    |___/\___/_/
           /____/
     """)
-    logging.info(f'RAGFlow version: {get_ragflow_version()}')
+    logging.info(f"RAGFlow version: {get_ragflow_version()}")
     settings.init_settings()
     print_rag_settings()
     if sys.platform != "win32":
         signal.signal(signal.SIGUSR1, start_tracemalloc_and_snapshot)
         signal.signal(signal.SIGUSR2, stop_tracemalloc)
-    TRACE_MALLOC_ENABLED = int(os.environ.get('TRACE_MALLOC_ENABLED', "0"))
+    TRACE_MALLOC_ENABLED = int(os.environ.get("TRACE_MALLOC_ENABLED", "0"))
     if TRACE_MALLOC_ENABLED:
         start_tracemalloc_and_snapshot(None, None)
 
@@ -1079,6 +1213,7 @@ async def main():
             await task_limiter.acquire()
             nursery.start_soon(task_manager)
     logging.error("BUG!!! You should not reach here!!!")
+
 
 if __name__ == "__main__":
     faulthandler.enable()

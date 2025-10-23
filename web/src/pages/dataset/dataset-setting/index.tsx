@@ -7,6 +7,8 @@ import { Form } from '@/components/ui/form';
 import { FormLayout } from '@/constants/form';
 import { DocumentParserType } from '@/constants/knowledge';
 import { PermissionRole } from '@/constants/permission';
+import { useFetchKnowledgeBaseConfiguration } from '@/hooks/use-knowledge-request';
+import { useFetchUserInfo } from '@/hooks/user-setting-hooks';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -23,7 +25,6 @@ import { MainContainer } from './configuration-form-container';
 import { ChunkMethodItem, ParseTypeItem } from './configuration/common-item';
 import { formSchema } from './form-schema';
 import { GeneralForm } from './general-form';
-import { useFetchKnowledgeConfigurationOnMount } from './hooks';
 import { SavingButton } from './saving-button';
 const enum DocumentType {
   DeepDOC = 'DeepDOC',
@@ -45,14 +46,28 @@ const enum MethodValue {
 
 export default function DatasetSettings() {
   const { t } = useTranslation();
+  const { data: userInfo } = useFetchUserInfo();
+  const [hasEditPermission, setHasEditPermission] = useState(false);
+
+  // 使用独立的hook获取知识库详情
+  const { data: detailsData, isLoading } = useFetchKnowledgeBaseConfiguration();
+
+  useEffect(() => {
+    if (detailsData) {
+      // 检查用户是否有编辑权限
+      const permission = detailsData.tenant_id === userInfo?.id ||
+                        (userInfo?.is_superuser && detailsData.permission === 'public');
+      setHasEditPermission(permission);
+    }
+  }, [detailsData, userInfo]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: '',
-      parser_id: DocumentParserType.Naive,
-      permission: PermissionRole.Me,
-      parser_config: {
+      name: detailsData?.name || '',
+      parser_id: detailsData?.parser_id || DocumentParserType.Naive,
+      permission: detailsData?.permission as any || PermissionRole.Me,
+      parser_config: detailsData?.parser_config || {
         layout_recognize: DocumentType.DeepDOC,
         chunk_token_num: 512,
         delimiter: `\n`,
@@ -75,12 +90,12 @@ export default function DatasetSettings() {
           method: MethodValue.Light,
         },
       },
-      pipeline_id: '',
-      parseType: 1,
-      pagerank: 0,
+      pipeline_id: detailsData?.pipeline_id || '',
+      parseType: detailsData?.pipeline_id ? 2 : 1,
+      pagerank: detailsData?.pagerank || 0,
     },
+    disabled: !hasEditPermission, // 如果没有编辑权限，则禁用整个表单
   });
-  const knowledgeDetails = useFetchKnowledgeConfigurationOnMount(form);
   // const [pipelineData, setPipelineData] = useState<IDataPipelineNodeProps>();
   const [graphRagGenerateData, setGraphRagGenerateData] =
     useState<IGenerateLogButtonProps>();
@@ -88,27 +103,27 @@ export default function DatasetSettings() {
     useState<IGenerateLogButtonProps>();
 
   useEffect(() => {
-    console.log('🚀 ~ DatasetSettings ~ knowledgeDetails:', knowledgeDetails);
-    if (knowledgeDetails) {
+    console.log('🚀 ~ DatasetSettings ~ detailsData:', detailsData);
+    if (detailsData) {
       // const data: IDataPipelineNodeProps = {
-      //   id: knowledgeDetails.pipeline_id,
-      //   name: knowledgeDetails.pipeline_name,
-      //   avatar: knowledgeDetails.pipeline_avatar,
+      //   id: detailsData.pipeline_id,
+      //   name: detailsData.pipeline_name,
+      //   avatar: detailsData.pipeline_avatar,
       //   linked: true,
       // };
       // setPipelineData(data);
       setGraphRagGenerateData({
-        finish_at: knowledgeDetails.graphrag_task_finish_at,
-        task_id: knowledgeDetails.graphrag_task_id,
+        finish_at: detailsData.graphrag_task_finish_at,
+        task_id: detailsData.graphrag_task_id,
       } as IGenerateLogButtonProps);
       setRaptorGenerateData({
-        finish_at: knowledgeDetails.raptor_task_finish_at,
-        task_id: knowledgeDetails.raptor_task_id,
+        finish_at: detailsData.raptor_task_finish_at,
+        task_id: detailsData.raptor_task_id,
       } as IGenerateLogButtonProps);
-      form.setValue('parseType', knowledgeDetails.pipeline_id ? 2 : 1);
-      form.setValue('pipeline_id', knowledgeDetails.pipeline_id || '');
+      form.setValue('parseType', detailsData.pipeline_id ? 2 : 1);
+      form.setValue('pipeline_id', detailsData.pipeline_id || '');
     }
-  }, [knowledgeDetails, form]);
+  }, [detailsData, form]);
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     try {
@@ -146,7 +161,7 @@ export default function DatasetSettings() {
   const parseType = useWatch({
     control: form.control,
     name: 'parseType',
-    defaultValue: knowledgeDetails.pipeline_id ? 2 : 1,
+    defaultValue: detailsData?.pipeline_id ? 2 : 1,
   });
   const selectedTag = useWatch({
     name: 'parser_id',
@@ -211,13 +226,16 @@ export default function DatasetSettings() {
               <Button
                 type="reset"
                 className="bg-transparent text-color-white hover:bg-transparent border-gray-500 border-[1px]"
+                disabled={!hasEditPermission}
                 onClick={() => {
-                  form.reset();
+                  if (hasEditPermission) {
+                    form.reset();
+                  }
                 }}
               >
                 {t('knowledgeConfiguration.cancel')}
               </Button>
-              <SavingButton></SavingButton>
+              <SavingButton disabled={!hasEditPermission}></SavingButton>
             </div>
           </form>
         </Form>

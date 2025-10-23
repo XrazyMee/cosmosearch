@@ -1,5 +1,5 @@
 import { MoreButton } from '@/components/more-button';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { SearchInput } from '@/components/ui/input';
@@ -57,11 +57,11 @@ export function Sessions({
     <section className="p-6 w-[296px]  flex flex-col">
       <section className="flex items-center text-base justify-between gap-2">
         <div className="flex gap-3 items-center min-w-0">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             avatar={data.icon}
             name={data.name}
             className="size-8"
-          ></RAGFlowAvatar>
+          ></CosmoSearchAvatar>
           <span className="flex-1 truncate">{data.name}</span>
         </div>
         <PanelLeftClose

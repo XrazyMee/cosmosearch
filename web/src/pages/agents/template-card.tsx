@@ -1,4 +1,4 @@
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { IFlowTemplate } from '@/interfaces/database/agent';
@@ -26,11 +26,11 @@ export function TemplateCard({ data, showModal }: IProps) {
     <Card className="border-colors-outline-neutral-standard group relative min-h-40">
       <CardContent className="p-4 ">
         <div className="flex justify-start items-center gap-4 mb-4">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             className="w-7 h-7"
             avatar={data.avatar ? data.avatar : 'https://github.com/shadcn.png'}
             name={data?.title[language] || 'CN'}
-          ></RAGFlowAvatar>
+          ></CosmoSearchAvatar>
           <div className="text-[18px] font-bold ">{data?.title[language]}</div>
         </div>
         <p className="break-words">{data?.description[language]}</p>

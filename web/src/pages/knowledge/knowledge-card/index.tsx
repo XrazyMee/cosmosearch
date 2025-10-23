@@ -40,10 +40,10 @@ const KnowledgeCard = ({ item }: IProps) => {
 
   return (
     <Badge.Ribbon
-      text={item?.nickname}
-      color={userInfo?.nickname === item?.nickname ? '#1677ff' : 'pink'}
+      text={item.permission === 'public' ? t('knowledgeList.permissionPublic') : item?.nickname}
+      color={item.permission === 'public' ? 'red' : (userInfo?.nickname === item?.nickname ? '#1677ff' : 'pink')}
       className={classNames(styles.ribbon, {
-        [styles.hideRibbon]: item.permission !== 'team',
+        [styles.hideRibbon]: item.permission !== 'team' && item.permission !== 'public',
       })}
     >
       <Card className={styles.card} onClick={handleCardClick}>

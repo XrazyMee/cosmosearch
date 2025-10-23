@@ -1,4 +1,4 @@
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/utils/date';
 import { ChevronRight } from 'lucide-react';
@@ -22,11 +22,11 @@ export function ApplicationCard({
     <Card className="w-[264px]" onClick={onClick}>
       <CardContent className="p-2.5  group flex justify-between w-full">
         <div className="flex items-center gap-2.5 w-full">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             className="size-14 rounded-lg"
             avatar={app.avatar}
             name={app.title || 'CN'}
-          ></RAGFlowAvatar>
+          ></CosmoSearchAvatar>
           <div className="flex-1">
             <h3 className="text-sm font-normal line-clamp-1 mb-1 text-ellipsis w-[160px] overflow-hidden">
               {app.title}

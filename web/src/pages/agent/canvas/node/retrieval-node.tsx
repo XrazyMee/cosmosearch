@@ -1,5 +1,5 @@
 import { NodeCollapsible } from '@/components/collapse';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { useFetchKnowledgeList } from '@/hooks/knowledge-hooks';
 import { IRetrievalNode } from '@/interfaces/database/flow';
 import { NodeProps, Position } from '@xyflow/react';
@@ -53,7 +53,7 @@ function InnerRetrievalNode({
             return (
               <div className={styles.nodeText} key={id}>
                 <div className="flex items-center gap-1.5">
-                  <RAGFlowAvatar
+                  <CosmoSearchAvatar
                     className="size-6 rounded-lg"
                     avatar={id}
                     name={item?.name || (label as string) || 'CN'}

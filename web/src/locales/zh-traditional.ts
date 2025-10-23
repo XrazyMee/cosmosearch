@@ -72,6 +72,11 @@ export default {
       flow: '智能體',
       search: '搜尋',
       welcome: '歡迎來到',
+      literatureSearch: '文獻檢索',
+      cosmosearch: 'CosmoSearch',
+      heroTitle: '下一代AI搜尋平台',
+      heroDescription: '利用先進的人工智慧技術，為您提供更智慧、更準確的文獻檢索和知識發現體驗',
+      getStarted: '開始使用',
     },
     knowledgeList: {
       welcome: '歡迎回來',

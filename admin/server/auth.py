@@ -58,9 +58,7 @@ def setup_auth(login_manager):
                     logging.warning(f"Authentication attempt with invalid token format: {len(access_token)} chars")
                     return None
 
-                user = UserService.query(
-                    access_token=access_token, status=StatusEnum.VALID.value
-                )
+                user = UserService.query(access_token=access_token, status=StatusEnum.VALID.value)
                 if user:
                     if not user[0].access_token or not user[0].access_token.strip():
                         logging.warning(f"User {user[0].email} has empty access_token in database")
@@ -79,7 +77,15 @@ def init_default_admin():
     # Verify that at least one active admin user exists. If not, create a default one.
     users = UserService.query(is_superuser=True)
     if not users:
-        default_admin = {
+        from api.db.services.user_service import TenantService, UserTenantService
+        from api.db.services.tenant_llm_service import TenantLLMService
+        from api.db.init_data import encode_to_base64
+        from api import settings
+        from api.db import UserTenantRole
+        from api.db.services.llm_service import get_init_tenant_llm
+        import uuid
+
+        user_info = {
             "id": uuid.uuid1().hex,
             "password": encode_to_base64("admin"),
             "nickname": "admin",
@@ -88,8 +94,44 @@ def init_default_admin():
             "creator": "system",
             "status": "1",
         }
-        if not UserService.save(**default_admin):
+
+        tenant = {
+            "id": user_info["id"],
+            "name": user_info["nickname"] + "'s Kingdom",
+            "llm_id": getattr(settings, "DEFAULT_LLM_ID", getattr(settings, "CHAT_MDL", "")),  # 使用getattr避免未初始化时出错
+            "embd_id": getattr(settings, "DEFAULT_EMBD_ID", getattr(settings, "EMBEDDING_MDL", "")),
+            "asr_id": getattr(settings, "DEFAULT_ASR_ID", getattr(settings, "ASR_MDL", "")),
+            "parser_ids": getattr(
+                settings,
+                "DEFAULT_PARSER_IDS",
+                getattr(
+                    settings,
+                    "PARSERS",
+                    "naive:General,qa:Q&A,resume:Resume,manual:Manual,table:Table,paper:Paper,book:Book,laws:Laws,presentation:Presentation,picture:Picture,one:One,audio:Audio,email:Email,tag:Tag",
+                ),
+            ),
+            "img2txt_id": getattr(settings, "DEFAULT_IMG2TXT_ID", getattr(settings, "IMAGE2TEXT_MDL", "")),
+        }
+
+        usr_tenant = {"tenant_id": user_info["id"], "user_id": user_info["id"], "invited_by": user_info["id"], "role": UserTenantRole.OWNER}
+
+        # 获取租户LLM配置
+        try:
+            tenant_llm = get_init_tenant_llm(user_info["id"])
+        except Exception:
+            # 如果获取LLM配置失败，使用默认空列表
+            tenant_llm = []
+
+        if not UserService.save(**user_info):
             raise AdminException("Can't init admin.", 500)
+
+        TenantService.insert(**tenant)
+        UserTenantService.insert(**usr_tenant)
+
+        if tenant_llm:
+            TenantLLMService.insert_many(tenant_llm)
+
+        logging.info("Super user initialized. email: admin@ragflow.io, password: admin. Changing the password after login is strongly recommended.")
     elif not any([u.is_active == ActiveEnum.ACTIVE.value for u in users]):
         raise AdminException("No active admin. Please update 'is_active' in db manually.", 500)
 
@@ -165,28 +207,17 @@ def login_verify(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         auth = request.authorization
-        if not auth or 'username' not in auth.parameters or 'password' not in auth.parameters:
-            return jsonify({
-                "code": 401,
-                "message": "Authentication required",
-                "data": None
-            }), 200
+        if not auth or "username" not in auth.parameters or "password" not in auth.parameters:
+            return jsonify({"code": 401, "message": "Authentication required", "data": None}), 200
 
-        username = auth.parameters['username']
-        password = auth.parameters['password']
+        username = auth.parameters["username"]
+        password = auth.parameters["password"]
         try:
             if check_admin(username, password) is False:
-                return jsonify({
-                    "code": 500,
-                    "message": "Access denied",
-                    "data": None
-                }), 200
+                return jsonify({"code": 500, "message": "Access denied", "data": None}), 200
         except Exception as e:
             error_msg = str(e)
-            return jsonify({
-                "code": 500,
-                "message": error_msg
-            }), 200
+            return jsonify({"code": 500, "message": error_msg}), 200
 
         return f(*args, **kwargs)
 

@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { RAGFlowSelect } from '@/components/ui/select';
 import { FormLayout } from '@/constants/form';
 import { IModalProps } from '@/interfaces/common';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,6 +43,7 @@ export function InputForm({ onOk }: IModalProps<any>) {
           message: t('knowledgeList.namePlaceholder'),
         })
         .trim(),
+      permission: z.string().optional().default('me'),
       parseType: z.number().optional(),
       embd_id: z
         .string()
@@ -125,6 +127,27 @@ export function InputForm({ onOk }: IModalProps<any>) {
                   {...field}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="permission"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t('knowledgeList.permission')}</FormLabel>
+              <RAGFlowSelect
+                placeholder={t('knowledgeList.permissionPlaceholder')}
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { label: t('knowledgeList.permissionMyself'), value: 'me' },
+                  { label: t('knowledgeList.permissionTeam'), value: 'team' },
+                  { label: t('knowledgeList.permissionPublic'), value: 'public' },
+                ]}
+              />
               <FormMessage />
             </FormItem>
           )}

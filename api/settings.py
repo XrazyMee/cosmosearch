@@ -82,12 +82,15 @@ BUILTIN_EMBEDDING_MODELS = ["BAAI/bge-large-zh-v1.5@BAAI", "maidalun1020/bce-emb
 SMTP_CONF = None
 MAIL_SERVER = ""
 MAIL_PORT = 000
-MAIL_USE_SSL= True
+MAIL_USE_SSL = True
 MAIL_USE_TLS = False
 MAIL_USERNAME = ""
 MAIL_PASSWORD = ""
 MAIL_DEFAULT_SENDER = ()
 MAIL_FRONTEND_URL = ""
+
+# admin API key
+ADMIN_API_KEY = None
 
 
 def get_or_create_secret_key():
@@ -210,6 +213,56 @@ def init_settings():
     if mail_default_sender and len(mail_default_sender) >= 2:
         MAIL_DEFAULT_SENDER = (mail_default_sender[0], mail_default_sender[1])
     MAIL_FRONTEND_URL = SMTP_CONF.get("mail_frontend_url", "")
+
+    global ADMIN_API_KEY, DEFAULT_LLM_ID, DEFAULT_EMBD_ID, DEFAULT_ASR_ID, DEFAULT_PARSER_IDS, DEFAULT_IMG2TXT_ID, DEFAULT_RERANK_ID
+    global DEFAULT_API_KEY, TONGYI_API_KEY
+    ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
+
+    # Update default configurations from environment variables
+    DEFAULT_LLM_ID = os.environ.get("DEFAULT_LLM_ID", getattr(globals(), "CHAT_MDL", ""))
+    DEFAULT_EMBD_ID = os.environ.get("DEFAULT_EMBD_ID", getattr(globals(), "EMBEDDING_MDL", ""))
+    DEFAULT_ASR_ID = os.environ.get("DEFAULT_ASR_ID", getattr(globals(), "ASR_MDL", ""))
+    DEFAULT_PARSER_IDS = os.environ.get(
+        "DEFAULT_PARSER_IDS",
+        getattr(
+            globals(),
+            "PARSERS",
+            "naive:General,qa:Q&A,resume:Resume,manual:Manual,table:Table,paper:Paper,book:Book,laws:Laws,presentation:Presentation,picture:Picture,one:One,audio:Audio,email:Email,tag:Tag",
+        ),
+    )
+    DEFAULT_IMG2TXT_ID = os.environ.get("DEFAULT_IMG2TXT_ID", getattr(globals(), "IMAGE2TEXT_MDL", ""))
+    DEFAULT_RERANK_ID = os.environ.get("DEFAULT_RERANK_ID", getattr(globals(), "RERANK_MDL", ""))
+
+    # Update default API key from environment variable
+    DEFAULT_API_KEY = os.environ.get("DEFAULT_API_KEY", "")
+    # Update Tongyi API key from environment variable (specific for Tongyi-Qianwen factory)
+    TONGYI_API_KEY = os.environ.get("TONGYI_API_KEY", "")
+
+    # Log the loaded environment variables
+    import logging
+
+    logging.info(
+        f"Environment variables loaded - DEFAULT_API_KEY: {'SET' if DEFAULT_API_KEY else 'NOT SET'}, TONGYI_API_KEY: {'SET' if TONGYI_API_KEY else 'NOT SET'}, DEFAULT_LLM_ID: {DEFAULT_LLM_ID}, DEFAULT_EMBD_ID: {DEFAULT_EMBD_ID}"
+    )
+
+
+# Default configurations that can be overridden by environment variables
+DEFAULT_LLM_ID = os.environ.get("DEFAULT_LLM_ID", getattr(globals(), "CHAT_MDL", ""))
+DEFAULT_EMBD_ID = os.environ.get("DEFAULT_EMBD_ID", getattr(globals(), "EMBEDDING_MDL", ""))
+DEFAULT_ASR_ID = os.environ.get("DEFAULT_ASR_ID", getattr(globals(), "ASR_MDL", ""))
+DEFAULT_PARSER_IDS = os.environ.get(
+    "DEFAULT_PARSER_IDS",
+    getattr(
+        globals(),
+        "PARSERS",
+        "naive:General,qa:Q&A,resume:Resume,manual:Manual,table:Table,paper:Paper,book:Book,laws:Laws,presentation:Presentation,picture:Picture,one:One,audio:Audio,email:Email,tag:Tag",
+    ),
+)
+DEFAULT_IMG2TXT_ID = os.environ.get("DEFAULT_IMG2TXT_ID", getattr(globals(), "IMAGE2TEXT_MDL", ""))
+DEFAULT_RERANK_ID = os.environ.get("DEFAULT_RERANK_ID", getattr(globals(), "RERANK_MDL", ""))
+
+# Default API key that can be overridden by environment variables
+DEFAULT_API_KEY = os.environ.get("DEFAULT_API_KEY", "")
 
 
 class CustomEnum(Enum):

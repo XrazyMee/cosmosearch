@@ -1,5 +1,5 @@
 import { IconFontFill } from '@/components/icon-font';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import ThemeToggle from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Domain } from '@/constants/common';
@@ -46,7 +46,7 @@ export function SideBar() {
   return (
     <aside className="w-[303px] bg-bg-base flex flex-col">
       <div className="px-6 flex gap-2 items-center">
-        <RAGFlowAvatar
+        <CosmoSearchAvatar
           avatar={userInfo?.avatar}
           name={userInfo?.nickname}
           isPerson

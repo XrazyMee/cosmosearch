@@ -211,12 +211,17 @@ def list_docs():
     kb_id = request.args.get("kb_id")
     if not kb_id:
         return get_json_result(data=False, message='Lack of "KB ID"', code=settings.RetCode.ARGUMENT_ERROR)
+    from api.db import TenantPermission
+
     tenants = UserTenantService.query(user_id=current_user.id)
     for tenant in tenants:
         if KnowledgebaseService.query(tenant_id=tenant.tenant_id, id=kb_id):
             break
     else:
-        return get_json_result(data=False, message="Only owner of knowledgebase authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+        # Check if it's a public knowledge base that the user can access
+        public_kb = KnowledgebaseService.query(permission=TenantPermission.PUBLIC.value, id=kb_id)
+        if not public_kb:
+            return get_json_result(data=False, message="Only owner of knowledgebase authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
     keywords = request.args.get("keywords", "")
 
     page_number = int(request.args.get("page", 0))
@@ -273,12 +278,17 @@ def get_filter():
     kb_id = req.get("kb_id")
     if not kb_id:
         return get_json_result(data=False, message='Lack of "KB ID"', code=settings.RetCode.ARGUMENT_ERROR)
+    from api.db import TenantPermission
+
     tenants = UserTenantService.query(user_id=current_user.id)
     for tenant in tenants:
         if KnowledgebaseService.query(tenant_id=tenant.tenant_id, id=kb_id):
             break
     else:
-        return get_json_result(data=False, message="Only owner of knowledgebase authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
+        # Check if it's a public knowledge base that the user can access
+        public_kb = KnowledgebaseService.query(permission=TenantPermission.PUBLIC.value, id=kb_id)
+        if not public_kb:
+            return get_json_result(data=False, message="Only owner of knowledgebase authorized for this operation.", code=settings.RetCode.OPERATING_ERROR)
 
     keywords = req.get("keywords", "")
 
@@ -572,7 +582,6 @@ def get(doc_id):
 @login_required
 @validate_request("doc_id")
 def change_parser():
-
     req = request.json
     if not DocumentService.accessible(req["doc_id"], current_user.id):
         return get_json_result(data=False, message="No authorization.", code=settings.RetCode.AUTHENTICATION_ERROR)

@@ -1,14 +1,15 @@
 import { IModalManagerChildrenProps } from '@/components/modal-manager';
-import { Form, Input, Modal } from 'antd';
+import { Form, Input, Modal, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 
 type FieldType = {
   name?: string;
+  permission?: string;
 };
 
 interface IProps extends Omit<IModalManagerChildrenProps, 'showModal'> {
   loading: boolean;
-  onOk: (name: string) => void;
+  onOk: (data: { name: string; permission?: string }) => void;
 }
 
 const KnowledgeCreatingModal = ({
@@ -23,7 +24,7 @@ const KnowledgeCreatingModal = ({
 
   const handleOk = async () => {
     const ret = await form.validateFields();
-    onOk(ret.name);
+    onOk({ name: ret.name, permission: ret.permission || 'me' });
   };
 
   const handleKeyDown = async (e) => {
@@ -54,6 +55,20 @@ const KnowledgeCreatingModal = ({
           rules={[{ required: true, message: t('namePlaceholder') }]}
         >
           <Input placeholder={t('namePlaceholder')} onKeyDown={handleKeyDown} />
+        </Form.Item>
+        <Form.Item<FieldType>
+          label={t('permission')}
+          name="permission"
+          initialValue="me"
+        >
+          <Select
+            placeholder={t('permissionPlaceholder')}
+            options={[
+              { label: t('permissionMyself'), value: 'me' },
+              { label: t('permissionTeam'), value: 'team' },
+              { label: t('permissionPublic'), value: 'public' },
+            ]}
+          />
         </Form.Item>
       </Form>
     </Modal>

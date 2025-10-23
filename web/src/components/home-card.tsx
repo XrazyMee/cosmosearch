@@ -1,4 +1,4 @@
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { formatDate } from '@/utils/date';
 import { ReactNode } from 'react';
@@ -31,7 +31,7 @@ export function HomeCard({
     >
       <CardContent className="p-4 flex gap-2 items-start group h-full">
         <div className="flex justify-between mb-4">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             className="w-[32px] h-[32px]"
             avatar={data.avatar}
             name={data.name}

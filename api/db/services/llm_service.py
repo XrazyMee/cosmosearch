@@ -29,6 +29,7 @@ class LLMService(CommonService):
 
 def get_init_tenant_llm(user_id):
     from api import settings
+
     tenant_llm = []
 
     seen = set()
@@ -47,13 +48,23 @@ def get_init_tenant_llm(user_id):
 
     for factory_config in factory_configs:
         for llm in LLMService.query(fid=factory_config["factory"]):
+            # 检查是否为通义千问(Tongyi-Qianwen)工厂，如果是则使用默认API密钥
+            api_key = factory_config["api_key"]
+            if factory_config["factory"] == "Tongyi-Qianwen" and settings.DEFAULT_API_KEY:
+                api_key = settings.DEFAULT_API_KEY
+            # 也可以通过环境变量指定特定工厂的API密钥，例如：TONGYI_API_KEY
+            elif factory_config["factory"] == "Tongyi-Qianwen" and hasattr(settings, "TONGYI_API_KEY") and settings.TONGYI_API_KEY:
+                api_key = settings.TONGYI_API_KEY
+            elif settings.DEFAULT_API_KEY:  # 如果设置了通用的默认API密钥，对所有工厂都使用
+                api_key = settings.DEFAULT_API_KEY
+
             tenant_llm.append(
                 {
                     "tenant_id": user_id,
                     "llm_factory": factory_config["factory"],
                     "llm_name": llm.llm_name,
                     "model_type": llm.model_type,
-                    "api_key": factory_config["api_key"],
+                    "api_key": api_key,
                     "api_base": factory_config["base_url"],
                     "max_tokens": llm.max_tokens if llm.max_tokens else 8192,
                 }
@@ -62,13 +73,22 @@ def get_init_tenant_llm(user_id):
     if settings.LIGHTEN != 1:
         for buildin_embedding_model in settings.BUILTIN_EMBEDDING_MODELS:
             mdlnm, fid = TenantLLMService.split_model_name_and_factory(buildin_embedding_model)
+            # 为内建嵌入模型也设置API密钥
+            api_key = ""
+            if fid == "Tongyi-Qianwen" and settings.DEFAULT_API_KEY:
+                api_key = settings.DEFAULT_API_KEY
+            elif fid == "Tongyi-Qianwen" and hasattr(settings, "TONGYI_API_KEY") and settings.TONGYI_API_KEY:
+                api_key = settings.TONGYI_API_KEY
+            elif settings.DEFAULT_API_KEY:  # 如果设置了通用的默认API密钥
+                api_key = settings.DEFAULT_API_KEY
+
             tenant_llm.append(
                 {
                     "tenant_id": user_id,
                     "llm_factory": fid,
                     "llm_name": mdlnm,
                     "model_type": "embedding",
-                    "api_key": "",
+                    "api_key": api_key,
                     "api_base": "",
                     "max_tokens": 1024 if buildin_embedding_model == "BAAI/bge-large-zh-v1.5@BAAI" else 512,
                 }
@@ -222,6 +242,7 @@ class LLMBundle(LLM4Tenant):
             return kwargs
         else:
             return {k: v for k, v in kwargs.items() if k in allowed_params}
+
     def chat(self, system: str, history: list, gen_conf: dict = {}, **kwargs) -> str:
         if self.langfuse:
             generation = self.langfuse.start_generation(trace_context=self.trace_context, name="chat", model=self.llm_name, input={"system": system, "history": history})

@@ -55,7 +55,7 @@ const queryClient = new QueryClient();
 type Locale = ConfigProviderProps['locale'];
 
 function Root({ children }: React.PropsWithChildren) {
-  const { theme: themeragflow } = useTheme();
+  const { theme: themecosmosearch } = useTheme();
   const getLocale = (lng: string) =>
     AntLanguageMap[lng as keyof typeof AntLanguageMap] ?? enUS;
 
@@ -74,7 +74,7 @@ function Root({ children }: React.PropsWithChildren) {
             fontFamily: 'Inter',
           },
           algorithm:
-            themeragflow === 'dark'
+            themecosmosearch === 'dark'
               ? theme.darkAlgorithm
               : theme.defaultAlgorithm,
         }}
@@ -105,7 +105,7 @@ const RootProvider = ({ children }: React.PropsWithChildren) => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider
           defaultTheme={ThemeEnum.Dark}
-          storageKey="ragflow-ui-theme"
+          storageKey="cosmosearch-ui-theme"
         >
           <Root>{children}</Root>
         </ThemeProvider>

@@ -1,5 +1,5 @@
 import { IconFontFill } from '@/components/icon-font';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Button } from '@/components/ui/button';
 import { useSecondPathName } from '@/hooks/route-hook';
 import {
@@ -63,11 +63,11 @@ export function SideBar({ refreshCount }: PropType) {
   return (
     <aside className="relative p-5 space-y-8">
       <div className="flex gap-2.5 max-w-[200px] items-center">
-        <RAGFlowAvatar
+        <CosmoSearchAvatar
           avatar={data.avatar}
           name={data.name}
           className="size-16"
-        ></RAGFlowAvatar>
+        ></CosmoSearchAvatar>
         <div className=" text-text-secondary text-xs space-y-1 overflow-hidden">
           <h3 className="text-lg font-semibold line-clamp-1 text-text-primary text-ellipsis overflow-hidden">
             {data.name}

@@ -8,7 +8,7 @@ import { toLower } from 'lodash';
 import { useMemo } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
-import { RAGFlowAvatar } from './ragflow-avatar';
+import { CosmoSearchAvatar } from './cosmosearch-avatar';
 import { FormControl, FormField, FormItem, FormLabel } from './ui/form';
 import { MultiSelect } from './ui/multi-select';
 
@@ -94,7 +94,7 @@ export function KnowledgeBaseFormField({
     label: x.name,
     value: x.id,
     icon: () => (
-      <RAGFlowAvatar className="size-4 mr-2" avatar={x.avatar} name={x.name} />
+      <CosmoSearchAvatar className="size-4 mr-2" avatar={x.avatar} name={x.name} />
     ),
   }));
 
@@ -113,7 +113,7 @@ export function KnowledgeBaseFormField({
               .map((x) => ({
                 ...x,
                 icon: () => (
-                  <RAGFlowAvatar
+                  <CosmoSearchAvatar
                     className="size-4 mr-2"
                     avatar={x.label}
                     name={x.label}

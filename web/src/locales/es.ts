@@ -63,6 +63,12 @@ export default {
       fileManager: 'Gestión de archivos',
       flow: 'Agente',
       search: 'Buscar',
+      welcome: 'Bienvenido a',
+      literatureSearch: 'Búsqueda de literatura',
+      cosmosearch: 'CosmoSearch',
+      heroTitle: 'Plataforma de búsqueda de IA de próxima generación',
+      heroDescription: 'Aproveche tecnologías de IA avanzadas para proporcionar experiencias de búsqueda de literatura y descubrimiento de conocimientos más inteligentes y precisas',
+      getStarted: 'Comenzar',
     },
     knowledgeList: {
       welcome: 'Bienvenido de nuevo',

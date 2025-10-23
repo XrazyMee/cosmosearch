@@ -27,9 +27,7 @@ const RagHeader = () => {
   const tagsData = useMemo(
     () => [
       { path: '/knowledge', name: t('knowledgeBase'), icon: KnowledgeBaseIcon },
-      { path: '/chat', name: t('chat'), icon: MessageOutlined },
-      { path: '/search', name: t('search'), icon: SearchOutlined },
-      { path: '/agent-list', name: t('flow'), icon: GraphIcon },
+      { path: '/literature-search', name: t('literatureSearch'), icon: SearchOutlined },
       { path: '/file', name: t('fileManager'), icon: FileIcon },
     ],
     [t],

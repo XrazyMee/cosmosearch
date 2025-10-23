@@ -115,7 +115,7 @@ def login():
 
     user = UserService.query_user(email, password)
 
-    if user and hasattr(user, 'is_active') and user.is_active == "0":
+    if user and hasattr(user, "is_active") and user.is_active == "0":
         return get_json_result(
             data=False,
             code=settings.RetCode.FORBIDDEN,
@@ -250,7 +250,7 @@ def oauth_callback(channel):
         # User exists, try to log in
         user = users[0]
         user.access_token = get_uuid()
-        if user and hasattr(user, 'is_active') and user.is_active == "0":
+        if user and hasattr(user, "is_active") and user.is_active == "0":
             return redirect("/?error=user_inactive")
 
         login_user(user)
@@ -343,7 +343,7 @@ def github_callback():
     # User has already registered, try to log in
     user = users[0]
     user.access_token = get_uuid()
-    if user and hasattr(user, 'is_active') and user.is_active == "0":
+    if user and hasattr(user, "is_active") and user.is_active == "0":
         return redirect("/?error=user_inactive")
     login_user(user)
     user.save()
@@ -446,7 +446,7 @@ def feishu_callback():
 
     # User has already registered, try to log in
     user = users[0]
-    if user and hasattr(user, 'is_active') and user.is_active == "0":
+    if user and hasattr(user, "is_active") and user.is_active == "0":
         return redirect("/?error=user_inactive")
     user.access_token = get_uuid()
     login_user(user)
@@ -626,12 +626,12 @@ def user_register(user_id, user):
     tenant = {
         "id": user_id,
         "name": user["nickname"] + "‘s Kingdom",
-        "llm_id": settings.CHAT_MDL,
-        "embd_id": settings.EMBEDDING_MDL,
-        "asr_id": settings.ASR_MDL,
-        "parser_ids": settings.PARSERS,
-        "img2txt_id": settings.IMAGE2TEXT_MDL,
-        "rerank_id": settings.RERANK_MDL,
+        "llm_id": settings.DEFAULT_LLM_ID,
+        "embd_id": settings.DEFAULT_EMBD_ID,
+        "asr_id": settings.DEFAULT_ASR_ID,
+        "parser_ids": settings.DEFAULT_PARSER_IDS,
+        "img2txt_id": settings.DEFAULT_IMG2TXT_ID,
+        "rerank_id": settings.DEFAULT_RERANK_ID,
     }
     usr_tenant = {
         "tenant_id": user_id,
@@ -841,7 +841,7 @@ def set_tenant_info():
         return get_json_result(data=True)
     except Exception as e:
         return server_error_response(e)
-        
+
 
 @manager.route("/forget/captcha", methods=["GET"])  # noqa: F821
 def forget_get_captcha():
@@ -850,7 +850,7 @@ def forget_get_captcha():
     - Generate an image captcha and cache it in Redis under key captcha:{email} with TTL = OTP_TTL_SECONDS.
     - Returns the captcha as a PNG image.
     """
-    email = (request.args.get("email") or "")
+    email = request.args.get("email") or ""
     if not email:
         return get_json_result(data=False, code=settings.RetCode.ARGUMENT_ERROR, message="email is required")
 
@@ -861,9 +861,10 @@ def forget_get_captcha():
     # Generate captcha text
     allowed = string.ascii_uppercase + string.digits
     captcha_text = "".join(secrets.choice(allowed) for _ in range(OTP_LENGTH))
-    REDIS_CONN.set(captcha_key(email), captcha_text, 60) # Valid for 60 seconds
+    REDIS_CONN.set(captcha_key(email), captcha_text, 60)  # Valid for 60 seconds
 
     from captcha.image import ImageCaptcha
+
     image = ImageCaptcha(width=300, height=120, font_sizes=[50, 60, 70])
     img_bytes = image.generate(captcha_text).read()
     response = make_response(img_bytes)
@@ -934,7 +935,7 @@ def forget_send_otp():
             )
         except Exception:
             return get_json_result(data=False, code=settings.RetCode.SERVER_ERROR, message="failed to send email")
-        
+
     return get_json_result(data=True, code=settings.RetCode.SUCCESS, message="verification passed, email sent")
 
 

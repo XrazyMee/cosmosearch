@@ -1,6 +1,6 @@
 import FileStatusBadge from '@/components/file-status-badge';
 import { FileIcon, IconFontFill } from '@/components/icon-font';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { Button } from '@/components/ui/button';
 import { RAGFlowPagination } from '@/components/ui/ragflow-pagination';
 import {
@@ -104,7 +104,7 @@ export const getFileLogsTableColumns = (
       header: t('dataPipeline'),
       cell: ({ row }) => (
         <div className="flex items-center gap-2 text-text-primary">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             avatar={row.original.avatar}
             name={row.original.pipeline_title}
             className="size-4"

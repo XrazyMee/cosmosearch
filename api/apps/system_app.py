@@ -14,15 +14,17 @@
 #  limitations under the License
 #
 import logging
+import os
 from datetime import datetime
 import json
 
+from flask import request
 from flask_login import login_required, current_user
 
 from api.db.db_models import APIToken
 from api.db.services.api_service import APITokenService
 from api.db.services.knowledgebase_service import KnowledgebaseService
-from api.db.services.user_service import UserTenantService
+from api.db.services.user_service import UserTenantService, UserService
 from api import settings
 from api.utils import current_timestamp, datetime_format
 from api.utils.api_utils import (
@@ -31,6 +33,7 @@ from api.utils.api_utils import (
     server_error_response,
     generate_confirmation_token,
 )
+from api.utils.crypt import decrypt
 from api.versions import get_ragflow_version
 from rag.utils.storage_factory import STORAGE_IMPL, STORAGE_IMPL_TYPE
 from timeit import default_timer as timer
@@ -178,7 +181,7 @@ def healthz():
     return jsonify(result), (200 if all_ok else 500)
 
 
-@manager.route("/ping", methods=["GET"]) # noqa: F821
+@manager.route("/ping", methods=["GET"])  # noqa: F821
 def ping():
     return "pong", 200
 
@@ -214,7 +217,7 @@ def new_token():
         if not tenants:
             return get_data_error_result(message="Tenant not found!")
 
-        tenant_id = [tenant for tenant in tenants if tenant.role == 'owner'][0].tenant_id
+        tenant_id = [tenant for tenant in tenants if tenant.role == "owner"][0].tenant_id
         obj = {
             "tenant_id": tenant_id,
             "token": generate_confirmation_token(tenant_id),
@@ -269,13 +272,12 @@ def token_list():
         if not tenants:
             return get_data_error_result(message="Tenant not found!")
 
-        tenant_id = [tenant for tenant in tenants if tenant.role == 'owner'][0].tenant_id
+        tenant_id = [tenant for tenant in tenants if tenant.role == "owner"][0].tenant_id
         objs = APITokenService.query(tenant_id=tenant_id)
         objs = [o.to_dict() for o in objs]
         for o in objs:
             if not o["beta"]:
-                o["beta"] = generate_confirmation_token(generate_confirmation_token(tenants[0].tenant_id)).replace(
-                    "ragflow-", "")[:32]
+                o["beta"] = generate_confirmation_token(generate_confirmation_token(tenants[0].tenant_id)).replace("ragflow-", "")[:32]
                 APITokenService.filter_update([APIToken.tenant_id == tenant_id, APIToken.token == o["token"]], o)
         return get_json_result(data=objs)
     except Exception as e:
@@ -308,13 +310,11 @@ def rm(token):
               type: boolean
               description: Deletion status.
     """
-    APITokenService.filter_delete(
-        [APIToken.tenant_id == current_user.id, APIToken.token == token]
-    )
+    APITokenService.filter_delete([APIToken.tenant_id == current_user.id, APIToken.token == token])
     return get_json_result(data=True)
 
 
-@manager.route('/config', methods=['GET'])  # noqa: F821
+@manager.route("/config", methods=["GET"])  # noqa: F821
 def get_config():
     """
     Get system configuration.
@@ -331,6 +331,266 @@ def get_config():
                         type: integer 0 means disabled, 1 means enabled
                         description: Whether user registration is enabled
     """
-    return get_json_result(data={
-        "registerEnabled": settings.REGISTER_ENABLED
-    })
+    return get_json_result(data={"registerEnabled": settings.REGISTER_ENABLED})
+
+
+@manager.route("/create_user_token", methods=["POST"])  # noqa: F821
+def create_user_token():
+    """
+    通过用户名和密码创建用户 API 令牌
+    ---
+    tags:
+      - API Tokens
+    parameters:
+      - in: body
+        name: body
+        description: 用户凭据和可选的令牌名称。
+        required: true
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+              description: 用户邮箱。
+            password:
+              type: string
+              description: 用户密码（需要加密）。
+            token_name:
+              type: string
+              description: 可选的令牌名称。
+    responses:
+      200:
+        description: 令牌创建成功。
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+              description: 生成的 API 令牌。
+    """
+    try:
+        if not request.json:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="Unauthorized!")
+
+        email = request.json.get("email", "")
+        password = request.json.get("password")
+
+        # 验证输入
+        if not email or not password:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="Email and password are required!")
+
+        try:
+            password = decrypt(password)
+        except BaseException:
+            return get_json_result(data=False, code=settings.RetCode.SERVER_ERROR, message="Fail to decrypt password")
+
+        # 验证用户凭据
+        user = UserService.query_user(email, password)
+        if not user or not hasattr(user, "is_active") or user.is_active == "0":
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="Invalid email or password!")
+
+        # 获取用户租户信息
+        tenants = UserTenantService.query(user_id=user.id)
+        if not tenants:
+            return get_data_error_result(message="Tenant not found!")
+
+        tenant_id = [tenant for tenant in tenants if tenant.role == "owner"][0].tenant_id
+
+        # 生成新的 API 令牌
+        obj = {
+            "tenant_id": tenant_id,
+            "token": generate_confirmation_token(tenant_id),
+            "beta": generate_confirmation_token(generate_confirmation_token(tenant_id)).replace("ragflow-", "")[:32],
+            "create_time": current_timestamp(),
+            "create_date": datetime_format(datetime.now()),
+            "update_time": None,
+            "update_date": None,
+        }
+
+        # 保存到数据库
+        if not APITokenService.save(**obj):
+            return get_data_error_result(message="Failed to create API token!")
+
+        # 只返回令牌信息，不返回敏感信息
+        return get_json_result(data={"token": obj["token"], "beta": obj["beta"], "create_time": obj["create_date"]})
+    except Exception as e:
+        logging.exception(e)
+        return server_error_response(e)
+
+
+@manager.route("/create_user_token_secure", methods=["POST"])  # noqa: F821
+def create_user_token_secure():
+    """
+    使用预先配置的管理员密钥创建用户 API 令牌
+    ---
+    tags:
+      - API Tokens
+    parameters:
+      - in: header
+        name: Admin-API-Key
+        type: string
+        required: true
+        description: 管理员 API 密钥。
+      - in: body
+        name: body
+        description: 用户邮箱。
+        required: true
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+              description: 用户邮箱。
+            token_name:
+              type: string
+              description: 可选的令牌名称。
+    responses:
+      200:
+        description: 令牌创建成功。
+        schema:
+          type: object
+          properties:
+            token:
+              type: string
+              description: 生成的 API 令牌。
+    """
+    try:
+        # 验证管理员 API 密钥
+        admin_api_key = request.headers.get("Admin-API-Key")
+        expected_admin_key = os.environ.get("ADMIN_API_KEY")
+
+        if not admin_api_key or not expected_admin_key or admin_api_key != expected_admin_key:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="Invalid admin API key!")
+
+        if not request.json:
+            return get_json_result(data=False, code=settings.RetCode.ARGUMENT_ERROR, message="Invalid request body!")
+
+        email = request.json.get("email", "")
+        if not email:
+            return get_json_result(data=False, code=settings.RetCode.ARGUMENT_ERROR, message="Email is required!")
+
+        # 查找用户
+        users = UserService.query(email=email)
+        if not users:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="User not found!")
+
+        user = users[0]
+        if hasattr(user, "is_active") and user.is_active == "0":
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="User account is disabled!")
+
+        # 获取用户租户信息
+        tenants = UserTenantService.query(user_id=user.id)
+        if not tenants:
+            return get_data_error_result(message="Tenant not found!")
+
+        tenant_id = [tenant for tenant in tenants if tenant.role == "owner"][0].tenant_id
+
+        # 生成新的 API 令牌
+        obj = {
+            "tenant_id": tenant_id,
+            "token": generate_confirmation_token(tenant_id),
+            "beta": generate_confirmation_token(generate_confirmation_token(tenant_id)).replace("ragflow-", "")[:32],
+            "create_time": current_timestamp(),
+            "create_date": datetime_format(datetime.now()),
+            "update_time": None,
+            "update_date": None,
+        }
+
+        # 保存到数据库
+        if not APITokenService.save(**obj):
+            return get_data_error_result(message="Failed to create API token!")
+
+        # 只返回令牌信息，不返回敏感信息
+        return get_json_result(data={"token": obj["token"], "beta": obj["beta"], "create_time": obj["create_date"], "user_email": email})
+    except Exception as e:
+        logging.exception(e)
+        return server_error_response(e)
+
+
+@manager.route("/get_user_tokens", methods=["POST"])  # noqa: F821
+def get_user_tokens():
+    """
+    使用预先配置的管理员密钥获取用户的所有 API 令牌
+    ---
+    tags:
+      - API Tokens
+    parameters:
+      - in: header
+        name: Admin-API-Key
+        type: string
+        required: true
+        description: 管理员 API 密钥。
+      - in: body
+        name: body
+        description: 用户邮箱。
+        required: true
+        schema:
+          type: object
+          properties:
+            email:
+              type: string
+              description: 用户邮箱。
+    responses:
+      200:
+        description: 令牌获取成功。
+        schema:
+          type: object
+          properties:
+            tokens:
+              type: array
+              items:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: API 令牌。
+                  beta:
+                    type: string
+                    description: Beta 令牌。
+                  create_time:
+                    type: string
+                    description: 创建时间。
+    """
+    try:
+        # 验证管理员 API 密钥
+        admin_api_key = request.headers.get("Admin-API-Key")
+        expected_admin_key = os.environ.get("ADMIN_API_KEY")
+
+        if not admin_api_key or not expected_admin_key or admin_api_key != expected_admin_key:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="Invalid admin API key!")
+
+        if not request.json:
+            return get_json_result(data=False, code=settings.RetCode.ARGUMENT_ERROR, message="Invalid request body!")
+
+        email = request.json.get("email", "")
+        if not email:
+            return get_json_result(data=False, code=settings.RetCode.ARGUMENT_ERROR, message="Email is required!")
+
+        # 查找用户
+        users = UserService.query(email=email)
+        if not users:
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="User not found!")
+
+        user = users[0]
+        if hasattr(user, "is_active") and user.is_active == "0":
+            return get_json_result(data=False, code=settings.RetCode.AUTHENTICATION_ERROR, message="User account is disabled!")
+
+        # 获取用户租户信息
+        tenants = UserTenantService.query(user_id=user.id)
+        if not tenants:
+            return get_data_error_result(message="Tenant not found!")
+
+        tenant_id = [tenant for tenant in tenants if tenant.role == "owner"][0].tenant_id
+
+        # 获取用户的 API 令牌
+        tokens = APITokenService.query(tenant_id=tenant_id)
+        token_list = []
+        for token in tokens:
+            token_dict = token.to_dict()
+            # 只返回必要信息，不返回敏感信息
+            token_list.append({"token": token_dict["token"], "beta": token_dict["beta"], "create_time": token_dict["create_date"], "create_timestamp": token_dict["create_time"]})
+
+        return get_json_result(data={"tokens": token_list, "user_email": email, "count": len(token_list)})
+    except Exception as e:
+        logging.exception(e)
+        return server_error_response(e)

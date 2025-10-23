@@ -1,4 +1,4 @@
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { SliderInputFormField } from '@/components/slider-input-form-field';
 import {
   FormControl,
@@ -28,11 +28,11 @@ export const TagSetItem = () => {
       value: x.id,
       icon: () => (
         <Space>
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             name={x.name}
             avatar={x.avatar}
             className="size-4"
-          ></RAGFlowAvatar>
+          ></CosmoSearchAvatar>
         </Space>
       ),
     }));

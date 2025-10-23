@@ -16,6 +16,7 @@ export const useSearchKnowledge = () => {
 
 export interface Iknowledge {
   name: string;
+  permission?: string;
   embd_id: string;
   parser_id: string;
 }

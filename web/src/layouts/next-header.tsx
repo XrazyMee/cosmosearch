@@ -1,5 +1,5 @@
 import { IconFontFill } from '@/components/icon-font';
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
 import {
@@ -67,9 +67,7 @@ export function Header() {
     () => [
       { path: Routes.Root, name: t('header.Root'), icon: House },
       { path: Routes.Datasets, name: t('header.dataset'), icon: Library },
-      { path: Routes.Chats, name: t('header.chat'), icon: MessageSquareText },
-      { path: Routes.Searches, name: t('header.search'), icon: Search },
-      { path: Routes.Agents, name: t('header.flow'), icon: Cpu },
+      { path: '/literature-search', name: t('header.literatureSearch'), icon: Search },
       { path: Routes.Files, name: t('header.fileManager'), icon: File },
     ],
     [t],
@@ -158,13 +156,13 @@ export function Header() {
         </Button>
         <BellButton></BellButton>
         <div className="relative">
-          <RAGFlowAvatar
+          <CosmoSearchAvatar
             name={nickname}
             avatar={avatar}
             isPerson
             className="size-8 cursor-pointer"
             onClick={navigateToOldProfile}
-          ></RAGFlowAvatar>
+          ></CosmoSearchAvatar>
           {/* Temporarily hidden */}
           {/* <Badge className="h-5 w-8 absolute font-normal p-0 justify-center -right-8 -top-2 text-bg-base bg-gradient-to-l from-[#42D7E7] to-[#478AF5]">
             Pro

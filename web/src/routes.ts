@@ -84,43 +84,13 @@ const routes = [
   },
   {
     path: Routes.Home,
-    component: '@/layouts',
     layout: false,
-    redirect: '/knowledge',
-  },
-  {
-    path: '/knowledge',
-    component: '@/pages/knowledge',
-  },
-  {
-    path: '/knowledge',
-    component: '@/pages/add-knowledge',
+    component: '@/layouts/next',
+    wrappers: ['@/wrappers/auth'],
     routes: [
       {
-        path: 'dataset',
-        component: '@/pages/add-knowledge/components/knowledge-dataset',
-        routes: [
-          {
-            path: '',
-            component: '@/pages/add-knowledge/components/knowledge-file',
-          },
-          {
-            path: 'chunk',
-            component: '@/pages/add-knowledge/components/knowledge-chunk',
-          },
-        ],
-      },
-      {
-        path: 'configuration',
-        component: '@/pages/add-knowledge/components/knowledge-setting',
-      },
-      {
-        path: 'testing',
-        component: '@/pages/add-knowledge/components/knowledge-testing',
-      },
-      {
-        path: 'knowledgeGraph',
-        component: '@/pages/add-knowledge/components/knowledge-graph',
+        path: '',
+        component: '@/pages/home',
       },
     ],
   },
@@ -142,6 +112,18 @@ const routes = [
     component: '@/pages/search',
   },
   {
+    path: '/literature-search',
+    layout: false,
+    component: '@/layouts/next',
+    wrappers: ['@/wrappers/auth'],
+    routes: [
+      {
+        path: '',
+        component: '@/pages/paper-search/index',
+      },
+    ],
+  },
+  {
     path: '/document/:id',
     component: '@/pages/document-viewer',
     layout: false,
@@ -160,6 +142,36 @@ const routes = [
       {
         path: Routes.Root,
         component: `@/pages${Routes.Home}`,
+      },
+      {
+        path: '/knowledge',
+        component: '@/pages/knowledge',
+      },
+      {
+        path: '/knowledge/dataset',
+        component: '@/pages/add-knowledge',
+        routes: [
+          {
+            path: '',
+            component: '@/pages/add-knowledge/components/knowledge-file',
+          },
+          {
+            path: 'chunk',
+            component: '@/pages/add-knowledge/components/knowledge-chunk',
+          },
+          {
+            path: 'configuration',
+            component: '@/pages/add-knowledge/components/knowledge-setting',
+          },
+          {
+            path: 'testing',
+            component: '@/pages/add-knowledge/components/knowledge-testing',
+          },
+          {
+            path: 'knowledgeGraph',
+            component: '@/pages/add-knowledge/components/knowledge-graph',
+          },
+        ],
       },
     ],
   },
@@ -194,9 +206,10 @@ const routes = [
     path: Routes.Searches,
     layout: false,
     component: '@/layouts/next',
+    wrappers: ['@/wrappers/auth'],
     routes: [
       {
-        path: Routes.Searches,
+        path: '',
         component: `@/pages${Routes.Searches}`,
       },
     ],

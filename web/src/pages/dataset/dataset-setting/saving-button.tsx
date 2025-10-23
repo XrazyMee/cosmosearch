@@ -5,7 +5,11 @@ import { useFormContext } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'umi';
 
-export function GeneralSavingButton() {
+type SavingButtonProps = {
+  disabled?: boolean;
+};
+
+export function GeneralSavingButton({ disabled = false }: SavingButtonProps) {
   const form = useFormContext();
   const { saveKnowledgeConfiguration, loading: submitLoading } =
     useUpdateKnowledge();
@@ -22,7 +26,9 @@ export function GeneralSavingButton() {
     <ButtonLoading
       type="button"
       loading={submitLoading}
+      disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         (async () => {
           let isValidate = await form.trigger('name');
           const { name, description, permission, avatar } = form.getValues();
@@ -45,7 +51,7 @@ export function GeneralSavingButton() {
   );
 }
 
-export function SavingButton() {
+export function SavingButton({ disabled = false }: SavingButtonProps) {
   const { saveKnowledgeConfiguration, loading: submitLoading } =
     useUpdateKnowledge();
   const form = useFormContext();
@@ -55,7 +61,9 @@ export function SavingButton() {
   return (
     <ButtonLoading
       loading={submitLoading}
+      disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         (async () => {
           try {
             let beValid = await form.formControl.trigger();

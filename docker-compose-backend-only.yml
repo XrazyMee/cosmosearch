@@ -1,0 +1,117 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ragflow-mysql
+    restart: on-failure
+    environment:
+      MYSQL_ROOT_PASSWORD: ragflow_mysql_root_default_pwd
+      MYSQL_DATABASE: ragflow
+    volumes:
+      - ./mysql_data:/var/lib/mysql
+    command: [
+      '--character-set-server=utf8mb4',
+      '--collation-server=utf8mb4_unicode_ci',
+      '--default-authentication-plugin=mysql_native_password'
+    ]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - ragflow
+
+  minio:
+    image: minio/minio:RELEASE.2024-05-10T01-41-38Z
+    container_name: ragflow-minio
+    restart: on-failure
+    environment:
+      MINIO_ROOT_USER: ragflow_minio_root_default_user
+      MINIO_ROOT_PASSWORD: ragflow_minio_root_default_pwd
+    volumes:
+      - ./minio_data:/minio_data
+    command: [ "server", "/minio_data", "--console-address", ":9001" ]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - ragflow
+
+  redis:
+    image: redis:7
+    container_name: ragflow-redis
+    restart: on-failure
+    volumes:
+      - ./redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - ragflow
+
+  elasticsearch:
+    image: elasticsearch:8.12.0
+    container_name: ragflow-es01
+    restart: on-failure
+    environment:
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - xpack.security.enabled=false
+      - "logger.level=INFO"
+    volumes:
+      - ./es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    networks:
+      - ragflow
+
+  ragflow-backend:
+    container_name: ragflow-backend-only
+    image: infiniflow/ragflow:nightly
+    restart: on-failure
+    depends_on:
+      mysql:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    environment:
+      - ADMIN_API_KEY=${ADMIN_API_KEY:-your-admin-api-key-here}
+      - TZ=${TIMEZONE:-Asia/Shanghai}
+      - HF_ENDPOINT=${HF_ENDPOINT-}
+      - MACOS=${MACOS-}
+    volumes:
+      - ./ragflow-logs:/ragflow/logs
+      - ./service_conf.yaml.template:/ragflow/conf/service_conf.yaml.template
+    ports:
+      - "9380:9380"  # API server
+      - "9381:9381"  # Admin server (if enabled)
+    networks:
+      - ragflow
+    command: [
+      "--disable-webserver",  # 关闭内置的 nginx 前端服务
+      "--disable-taskexecutor"  # 仅启动 API 服务
+    ]
+
+networks:
+  ragflow:
+    driver: bridge

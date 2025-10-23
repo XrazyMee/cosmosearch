@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useDeleteKnowledge } from '@/hooks/use-knowledge-request';
+import { useFetchUserInfo } from '@/hooks/user-setting-hooks';
 import { IKnowledge } from '@/interfaces/database/knowledge';
 import { PenLine, Trash2 } from 'lucide-react';
 import { MouseEventHandler, PropsWithChildren, useCallback } from 'react';
@@ -23,41 +24,53 @@ export function DatasetDropdown({
   }) {
   const { t } = useTranslation();
   const { deleteKnowledge } = useDeleteKnowledge();
+  const { data: userInfo } = useFetchUserInfo();
+
+  // 检查用户是否有编辑权限
+  const hasEditPermission = dataset.tenant_id === userInfo?.id || (userInfo?.is_superuser && dataset.permission === 'public');
 
   const handleShowDatasetRenameModal: MouseEventHandler<HTMLDivElement> =
     useCallback(
       (e) => {
         e.stopPropagation();
-        showDatasetRenameModal(dataset);
+        if (hasEditPermission) {
+          showDatasetRenameModal(dataset);
+        }
       },
-      [dataset, showDatasetRenameModal],
+      [dataset, showDatasetRenameModal, hasEditPermission],
     );
 
   const handleDelete: MouseEventHandler<HTMLDivElement> = useCallback(() => {
-    deleteKnowledge(dataset.id);
-  }, [dataset.id, deleteKnowledge]);
+    if (hasEditPermission) {
+      deleteKnowledge(dataset.id);
+    }
+  }, [dataset.id, deleteKnowledge, hasEditPermission]);
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>{children}</DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={handleShowDatasetRenameModal}>
-          {t('common.rename')} <PenLine />
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <ConfirmDeleteDialog onOk={handleDelete}>
-          <DropdownMenuItem
-            className="text-state-error"
-            onSelect={(e) => {
-              e.preventDefault();
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {t('common.delete')} <Trash2 />
+        {hasEditPermission && (
+          <DropdownMenuItem onClick={handleShowDatasetRenameModal}>
+            {t('common.rename')} <PenLine />
           </DropdownMenuItem>
-        </ConfirmDeleteDialog>
+        )}
+        {hasEditPermission && <DropdownMenuSeparator />}
+        {hasEditPermission && (
+          <ConfirmDeleteDialog onOk={handleDelete}>
+            <DropdownMenuItem
+              className="text-state-error"
+              onSelect={(e) => {
+                e.preventDefault();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {t('common.delete')} <Trash2 />
+            </DropdownMenuItem>
+          </ConfirmDeleteDialog>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

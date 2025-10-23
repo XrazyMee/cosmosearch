@@ -1,33 +1,33 @@
 import type { Meta, StoryObj } from '@storybook/react-webpack5';
 
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 
 // More on how to set up stories at: https://storybook.js.org/docs/writing-stories#default-export
 const meta = {
-  title: 'Example/RAGFlowAvatar',
-  component: RAGFlowAvatar,
+  title: 'Example/CosmoSearchAvatar',
+  component: CosmoSearchAvatar,
   parameters: {
     // Optional parameter to center the component in the Canvas. More info: https://storybook.js.org/docs/configure/story-layout
     layout: 'centered',
     docs: {
       description: {
         component: `
-## RAGFlowAvatar Component
+## CosmoSearchAvatar Component
 
-RAGFlowAvatar is a customizable avatar component that displays user avatars with intelligent fallbacks. When an image is not available, it generates colorful gradient backgrounds with user initials.
+CosmoSearchAvatar is a customizable avatar component that displays user avatars with intelligent fallbacks. When an image is not available, it generates colorful gradient backgrounds with user initials.
 
 ### Import Path
 \`\`\`typescript
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 \`\`\`
 
 ### Basic Usage
 \`\`\`tsx
-import { RAGFlowAvatar } from '@/components/ragflow-avatar';
+import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 
 function MyComponent() {
   return (
-    <RAGFlowAvatar
+    <CosmoSearchAvatar
       name="John Doe"
       avatar="https://example.com/avatar.jpg"
       isPerson={true}
@@ -78,7 +78,7 @@ function MyComponent() {
     name: 'John Doe',
     isPerson: false,
   },
-} satisfies Meta<typeof RAGFlowAvatar>;
+} satisfies Meta<typeof CosmoSearchAvatar>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -98,7 +98,7 @@ export const WithInitials: Story = {
 Shows the avatar component with only a name, displaying generated initials with a gradient background.
 
 \`\`\`tsx
-<RAGFlowAvatar
+<CosmoSearchAvatar
   name="John Doe"
   isPerson={false}
 />
@@ -126,7 +126,7 @@ export const WithAvatar: Story = {
 Shows the avatar component with an actual image. When isPerson is true, the avatar will be circular.
 
 \`\`\`tsx
-<RAGFlowAvatar
+<CosmoSearchAvatar
   name="Jane Smith"
   avatar="https://example.com/avatar.jpg"
   isPerson={true}
@@ -153,7 +153,7 @@ export const PersonStyle: Story = {
 Shows the avatar component with isPerson set to true, which makes it circular.
 
 \`\`\`tsx
-<RAGFlowAvatar
+<CosmoSearchAvatar
   name="Alice Johnson"
   isPerson={true}
 />
@@ -179,7 +179,7 @@ export const NonPersonStyle: Story = {
 Shows the avatar component with isPerson set to false, which makes it a rounded rectangle.
 
 \`\`\`tsx
-<RAGFlowAvatar
+<CosmoSearchAvatar
   name="Bot Assistant"
   isPerson={false}
 />

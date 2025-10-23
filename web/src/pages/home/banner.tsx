@@ -1,6 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'umi';
 
 function BannerCard() {
   return (
@@ -41,12 +43,32 @@ export function Banner() {
 
 export function NextBanner() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const handleGetStarted = () => {
+    navigate('/literature-search');
+  };
+
   return (
-    <section className="text-5xl pt-10 pb-14 font-bold px-10">
+    <section className="text-5xl pt-10 pb-14 font-bold px-10 text-center">
       <span className="text-text-primary">{t('header.welcome')}</span>
       <span className="pl-3 text-transparent bg-clip-text  bg-gradient-to-l from-[#40EBE3] to-[#4A51FF]">
-        RAGFlow
+        {t('header.cosmosearch')}
       </span>
+      <h1 className="text-6xl mt-8 font-bold">
+        {t('header.heroTitle')}
+      </h1>
+      <p className="text-xl mt-6 text-text-secondary max-w-2xl mx-auto">
+        {t('header.heroDescription')}
+      </p>
+      <div className="mt-10">
+        <Button
+          onClick={handleGetStarted}
+          className="px-8 py-6 text-lg bg-gradient-to-r from-[#40EBE3] to-[#4A51FF] hover:from-[#4A51FF] hover:to-[#4A51FF]"
+        >
+          {t('header.getStarted')}
+        </Button>
+      </div>
     </section>
   );
 }

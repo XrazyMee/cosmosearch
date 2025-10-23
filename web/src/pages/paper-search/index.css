@@ -1,0 +1,41 @@
+/* Paper Search Page Styles */
+.paper-search-container {
+  min-height: 100vh;
+}
+
+.header {
+  background: #fff;
+  padding: 0 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.sidebar {
+  background: #fff;
+  padding: 20px 0;
+}
+
+.content {
+  background: #fff;
+  padding: 24px;
+  margin: 0;
+  min-height: 280px;
+  border-radius: 6px;
+}
+
+.keyword-tag {
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  border: 2px solid transparent;
+}
+
+.literature-card {
+  width: 100%;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+.literature-card-selected {
+  border: 2px solid #1890ff;
+}

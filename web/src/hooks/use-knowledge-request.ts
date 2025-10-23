@@ -170,7 +170,7 @@ export const useCreateKnowledge = () => {
     mutateAsync,
   } = useMutation({
     mutationKey: [KnowledgeApiAction.CreateKnowledge],
-    mutationFn: async (params: { id?: string; name: string }) => {
+    mutationFn: async (params: { id?: string; name: string; permission?: string }) => {
       const { data = {} } = await kbService.createKb(params);
       if (data.code === 0) {
         message.success(

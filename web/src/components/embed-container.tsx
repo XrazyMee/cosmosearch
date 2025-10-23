@@ -1,7 +1,7 @@
 import { useFetchAppConf } from '@/hooks/logic-hooks';
 import { RefreshCcw } from 'lucide-react';
 import { PropsWithChildren } from 'react';
-import { RAGFlowAvatar } from './ragflow-avatar';
+import { CosmoSearchAvatar } from './cosmosearch-avatar';
 import { Button } from './ui/button';
 
 type EmbedContainerProps = {
@@ -27,7 +27,7 @@ export function EmbedContainer({
       <div className=" w-[80vw] border rounded-lg">
         <div className="flex justify-between items-center border-b p-3">
           <div className="flex gap-2 items-center">
-            <RAGFlowAvatar avatar={avatar} name={title} isPerson />
+            <CosmoSearchAvatar avatar={avatar} name={title} isPerson />
             <div className="text-xl text-foreground">{title}</div>
           </div>
           <Button

@@ -22,9 +22,11 @@ export const useSaveKnowledge = () => {
   const navigate = useNavigate();
 
   const onCreateOk = useCallback(
-    async (name: string) => {
+    async (data: { name: string; permission?: string }) => {
+      const { name, permission = 'me' } = data;
       const ret = await createKnowledge({
         name,
+        permission,
       });
 
       if (ret?.code === 0) {

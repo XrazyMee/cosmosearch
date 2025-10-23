@@ -1,15 +1,9 @@
-import { Applications } from './applications';
 import { NextBanner } from './banner';
-import { Datasets } from './datasets';
 
 const Home = () => {
   return (
-    <section>
+    <section className="flex flex-col items-center justify-center h-[calc(100vh-72px)]">
       <NextBanner></NextBanner>
-      <section className="h-[calc(100dvh-260px)] overflow-auto px-10">
-        <Datasets></Datasets>
-        <Applications></Applications>
-      </section>
     </section>
   );
 };

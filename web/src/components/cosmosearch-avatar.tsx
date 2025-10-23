@@ -30,7 +30,7 @@ const getColorForName = (name: string): { from: string; to: string } => {
   return PREDEFINED_COLORS[index];
 };
 
-export const RAGFlowAvatar = memo(
+export const CosmoSearchAvatar = memo(
   forwardRef<
     React.ElementRef<typeof AvatarPrimitive.Root>,
     React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root> & {
@@ -116,4 +116,4 @@ export const RAGFlowAvatar = memo(
   }),
 );
 
-RAGFlowAvatar.displayName = 'RAGFlowAvatar';
+CosmoSearchAvatar.displayName = 'CosmoSearchAvatar';
