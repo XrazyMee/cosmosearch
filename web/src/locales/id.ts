@@ -51,7 +51,8 @@ export default {
       nicknamePlaceholder: 'Silakan masukkan nama panggilan',
       register: 'Buat akun',
       continue: 'Lanjutkan',
-      title: 'Mulai membangun asisten pintar Anda.',
+      title: 'Platform Pencarian Literatur AI Generasi Baru',
+      heroTitle: 'Platform Pencarian Literatur AI Generasi Baru',
       description:
         'Daftar gratis untuk menjelajahi teknologi RAG teratas. Buat basis pengetahuan dan AI untuk memberdayakan bisnis Anda.',
       review: 'dari 500+ ulasan',

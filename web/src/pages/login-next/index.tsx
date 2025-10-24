@@ -1,3 +1,4 @@
+import { ReactComponent as SearchIcon } from '@/assets/svg/search-icon.svg';
 import SvgIcon from '@/components/svg-icon';
 import { useAuth } from '@/hooks/auth-hooks';
 import {
@@ -159,16 +160,12 @@ const Login = () => {
         <div className="absolute top-3 flex flex-col items-center mb-12 w-full text-text-primary">
           <div className="flex items-center mb-4 w-full pl-10 pt-10 ">
             <div className="w-12 h-12 p-2 rounded-lg bg-bg-base border-2 border-border flex items-center justify-center mr-3">
-              <img
-                src={'/logo.svg'}
-                alt="logo"
-                className="size-8 mr-[12] cursor-pointer"
-              />
+              <SearchIcon className="size-8 mr-[12] cursor-pointer" />
             </div>
-            <div className="text-xl font-bold self-center">RAGFlow</div>
+            <div className="text-xl font-bold self-center">CosmoSearch</div>
           </div>
           <h1 className="text-[36px] font-medium  text-center mb-2">
-            {t('title')}
+            {t('heroTitle')}
           </h1>
           {/* border border-accent-primary rounded-full */}
           {/* <div className="mt-4 px-6 py-1 text-sm font-medium text-cyan-600  hover:bg-cyan-50 transition-colors duration-200 border-glow relative overflow-hidden">

@@ -58,7 +58,9 @@ export default {
       nicknamePlaceholder: 'Veuillez saisir votre pseudo',
       register: 'Créer un compte',
       continue: 'Continuer',
-      title: 'Commencez à créer vos IA.',
+      title: 'Plateforme de recherche de littérature AI de nouvelle génération',
+      heroTitle:
+        'Plateforme de recherche de littérature AI de nouvelle génération',
       description:
         'Inscrivez-vous gratuitement pour explorer la technologie RAG. Créez des bases de connaissances et des IA pour booster votre activité.',
       review: 'sur plus de 500 avis',

@@ -59,6 +59,7 @@ export default {
       description:
         '免費註冊以探索頂級 RAG 技術。創建知識庫和人工智能來增強您的業務',
       review: '來自 500 多條評論',
+      heroTitle: '下一代AI文獻搜尋平台',
     },
     header: {
       knowledgeBase: '知識庫',
@@ -74,8 +75,9 @@ export default {
       welcome: '歡迎來到',
       literatureSearch: '文獻檢索',
       cosmosearch: 'CosmoSearch',
-      heroTitle: '下一代AI搜尋平台',
-      heroDescription: '利用先進的人工智慧技術，為您提供更智慧、更準確的文獻檢索和知識發現體驗',
+      heroTitle: 'AI搜尋平台',
+      heroDescription:
+        '利用先進的人工智慧技術，為您提供更智慧、更準確的文獻檢索和知識發現體驗',
       getStarted: '開始使用',
     },
     knowledgeList: {

@@ -230,7 +230,10 @@ releases! 🌟
 5. In your web browser, enter the IP address of your server and log in to RAGFlow.
    > With the default settings, you only need to enter `http://IP_OF_YOUR_MACHINE` (**sans** port number) as the default
    > HTTP serving port `80` can be omitted when using the default configurations.
-6. In [service_conf.yaml.template](./docker/service_conf.yaml.template), select the desired LLM factory in `user_default_llm` and update
+6. In [service_conf.yaml.template](./docker/service_conf.yaml.template), you can either:
+   - Configure per-tenant default LLM settings via `user_default_llm` section, or
+   - Configure unified LLM settings for all users via `unified_llm_config` section
+   - Update the `API_KEY` fields with your corresponding API keys
    the `API_KEY` field with the corresponding API key.
 
    > See [llm_api_key_setup](https://ragflow.io/docs/dev/llm_api_key_setup) for more information.
@@ -248,6 +251,28 @@ When it comes to system configurations, you will need to manage the following fi
 
 > The [./docker/README](./docker/README.md) file provides a detailed description of the environment settings and service
 > configurations which can be used as `${ENV_VARS}` in the [service_conf.yaml.template](./docker/service_conf.yaml.template) file.
+
+### Unified LLM Configuration
+
+RAGFlow supports two modes for LLM configuration:
+
+1. **Per-Tenant Configuration (Default)**: Each tenant can configure their own LLM providers and settings.
+2. **Unified Configuration**: All users share the same LLM configuration, which is useful for enterprise environments where you want to standardize LLM usage and manage costs centrally.
+
+To enable unified LLM configuration, uncomment and configure the `unified_llm_config` section in [service_conf.yaml.template](./docker/service_conf.yaml.template) and set `enabled` to `true`.
+
+You can also use environment variables to configure the unified settings:
+
+- `SHARED_LLM_ENABLED`: Set to `true` to enable unified LLM configuration
+- `SHARED_LLM_FACTORY`: The LLM provider (e.g., OpenAI, Tongyi-Qianwen)
+- `SHARED_LLM_API_KEY`: The API key for the LLM provider
+- `SHARED_LLM_BASE_URL`: Optional base URL for the API
+- `SHARED_CHAT_MODEL`: Chat model name (format: model_name@provider)
+- `SHARED_EMBEDDING_MODEL`: Embedding model name
+- `SHARED_RERANK_MODEL`: Re-rank model name
+- `SHARED_IMAGE2TEXT_MODEL`: Image to text model name
+- `SHARED_ASR_MODEL`: ASR model name
+- `SHARED_TTS_MODEL`: TTS model name
 
 To update the default HTTP serving port (80), go to [docker-compose.yml](./docker/docker-compose.yml) and change `80:80`
 to `<YOUR_SERVING_PORT>:80`.

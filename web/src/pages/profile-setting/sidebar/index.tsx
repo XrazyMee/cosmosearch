@@ -6,45 +6,13 @@ import { useSecondPathName } from '@/hooks/route-hook';
 import { useFetchUserInfo } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import {
-  AlignEndVertical,
-  Banknote,
-  Box,
-  FileCog,
-  User,
-  Users,
-} from 'lucide-react';
+import { User } from 'lucide-react';
 import { useHandleMenuClick } from './hooks';
 
 const menuItems = [
   {
     section: 'Account & collaboration',
-    items: [
-      { icon: User, label: 'Profile', key: Routes.Profile },
-      { icon: Users, label: 'Team', key: Routes.Team },
-      { icon: Banknote, label: 'Plan', key: Routes.Plan },
-      { icon: Banknote, label: 'MCP', key: Routes.Mcp },
-    ],
-  },
-  {
-    section: 'System configurations',
-    items: [
-      {
-        icon: Box,
-        label: 'Model management',
-        key: Routes.Model,
-      },
-      {
-        icon: FileCog,
-        label: 'Prompt management',
-        key: Routes.Prompt,
-      },
-      {
-        icon: AlignEndVertical,
-        label: 'Chunking method',
-        key: Routes.Chunk,
-      },
-    ],
+    items: [{ icon: User, label: 'Profile', key: Routes.Profile }],
   },
 ];
 

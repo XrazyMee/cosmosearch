@@ -22,6 +22,7 @@ from api.db.services.common_service import CommonService
 from api.db.services.langfuse_service import TenantLangfuseService
 from api.db.services.user_service import TenantService
 from rag.llm import ChatModel, CvModel, EmbeddingModel, RerankModel, Seq2txtModel, TTSModel
+import logging
 
 
 class LLMFactoriesService(CommonService):
@@ -91,6 +92,38 @@ class TenantLLMService(CommonService):
         if not e:
             raise LookupError("Tenant not found")
 
+        # Check if unified/shared LLM configuration is enabled
+        if settings.SHARED_LLM_ENABLED:
+            # Use unified configuration based on llm_type
+            if llm_type == LLMType.CHAT.value:
+                model_name = settings.SHARED_CHAT_MODEL
+            elif llm_type == LLMType.EMBEDDING.value:
+                model_name = settings.SHARED_EMBEDDING_MODEL
+            elif llm_type == LLMType.RERANK:
+                model_name = settings.SHARED_RERANK_MODEL
+            elif llm_type == LLMType.IMAGE2TEXT.value:
+                model_name = settings.SHARED_IMAGE2TEXT_MODEL
+            elif llm_type == LLMType.SPEECH2TEXT.value:
+                model_name = settings.SHARED_ASR_MODEL
+            elif llm_type == LLMType.TTS.value:
+                model_name = settings.SHARED_TTS_MODEL
+            else:
+                raise LookupError(f"Unsupported LLM type for unified configuration: {llm_type}")
+
+            if not model_name:
+                raise LookupError(f"Unified model not configured for type: {llm_type}")
+
+            # Create model config using unified settings
+            model_config = {
+                "llm_factory": settings.SHARED_LLM_FACTORY,
+                "api_key": settings.SHARED_LLM_API_KEY,
+                "llm_name": model_name,
+                "api_base": settings.SHARED_LLM_BASE_URL
+            }
+            logging.info(f"Using unified LLM configuration for tenant {tenant_id}, type {llm_type}: {model_name}")
+            return model_config
+
+        # Original logic for per-tenant configuration
         if llm_type == LLMType.EMBEDDING.value:
             mdlnm = tenant.embd_id if not llm_name else llm_name
         elif llm_type == LLMType.SPEECH2TEXT.value:

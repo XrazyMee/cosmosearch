@@ -1,4 +1,3 @@
-import { IconFontFill } from '@/components/icon-font';
 import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
 import { useTheme } from '@/components/theme-provider';
 import { Button } from '@/components/ui/button';
@@ -19,11 +18,9 @@ import { camelCase } from 'lodash';
 import {
   ChevronDown,
   CircleHelp,
-  Cpu,
   File,
   House,
   Library,
-  MessageSquareText,
   Moon,
   Search,
   Sun,
@@ -41,7 +38,7 @@ export function Header() {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const navigate = useNavigateWithFromState();
-  const { navigateToOldProfile } = useNavigatePage();
+  const { navigateToProfile } = useNavigatePage();
 
   const changeLanguage = useChangeLanguage();
   const { setTheme, theme } = useTheme();
@@ -67,7 +64,11 @@ export function Header() {
     () => [
       { path: Routes.Root, name: t('header.Root'), icon: House },
       { path: Routes.Datasets, name: t('header.dataset'), icon: Library },
-      { path: '/literature-search', name: t('header.literatureSearch'), icon: Search },
+      {
+        path: '/literature-search',
+        name: t('header.literatureSearch'),
+        icon: Search,
+      },
       { path: Routes.Files, name: t('header.fileManager'), icon: File },
     ],
     [t],
@@ -105,34 +106,13 @@ export function Header() {
 
   return (
     <section className="py-5 px-10 flex justify-between items-center ">
-      <div className="flex items-center gap-4">
-        <img
-          src={'/logo.svg'}
-          alt="logo"
-          className="size-10 mr-[12] cursor-pointer"
-          onClick={handleLogoClick}
-        />
-      </div>
+      <div className="flex items-center gap-4"></div>
       <Segmented
         options={options}
         value={pathname}
         onChange={handleChange}
       ></Segmented>
       <div className="flex items-center gap-5 text-text-badge">
-        <a
-          target="_blank"
-          href="https://discord.com/invite/NjYzJD3GM3"
-          rel="noreferrer"
-        >
-          <IconFontFill name="a-DiscordIconSVGVectorIcon"></IconFontFill>
-        </a>
-        <a
-          target="_blank"
-          href="https://github.com/infiniflow/ragflow"
-          rel="noreferrer"
-        >
-          <IconFontFill name="GitHub"></IconFontFill>
-        </a>
         <DropdownMenu>
           <DropdownMenuTrigger>
             <div className="flex items-center gap-1">
@@ -161,7 +141,7 @@ export function Header() {
             avatar={avatar}
             isPerson
             className="size-8 cursor-pointer"
-            onClick={navigateToOldProfile}
+            onClick={navigateToProfile}
           ></CosmoSearchAvatar>
           {/* Temporarily hidden */}
           {/* <Badge className="h-5 w-8 absolute font-normal p-0 justify-center -right-8 -top-2 text-bg-base bg-gradient-to-l from-[#42D7E7] to-[#478AF5]">

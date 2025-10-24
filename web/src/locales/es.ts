@@ -47,7 +47,9 @@ export default {
       nicknamePlaceholder: 'Por favor ingresa tu apodo',
       register: 'Crear una cuenta',
       continue: 'Continuar',
-      title: 'Pruebas asistentes inteligentes.',
+      title: 'Plataforma de búsqueda de literatura AI de próxima generación',
+      heroTitle:
+        'Plataforma de búsqueda de literatura AI de próxima generación',
       description:
         'Tecnología RAG de primer nivel. Crea bases de conocimiento y asistentes inteligentes.',
       review: 'Fiscalía General de la Nación',
@@ -67,7 +69,8 @@ export default {
       literatureSearch: 'Búsqueda de literatura',
       cosmosearch: 'CosmoSearch',
       heroTitle: 'Plataforma de búsqueda de IA de próxima generación',
-      heroDescription: 'Aproveche tecnologías de IA avanzadas para proporcionar experiencias de búsqueda de literatura y descubrimiento de conocimientos más inteligentes y precisas',
+      heroDescription:
+        'Aproveche tecnologías de IA avanzadas para proporcionar experiencias de búsqueda de literatura y descubrimiento de conocimientos más inteligentes y precisas',
       getStarted: 'Comenzar',
     },
     knowledgeList: {

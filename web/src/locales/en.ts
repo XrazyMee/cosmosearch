@@ -75,7 +75,8 @@ export default {
       nicknamePlaceholder: 'Please input nickname',
       register: 'Create an account',
       continue: 'Continue',
-      title: 'A leading RAG engine for LLM context',
+      title: 'Next-Generation AI Literature Search Platform',
+      heroTitle: 'Next-Generation AI Literature Search Platform',
       start: "Let's get started",
       description:
         'Sign up for free to explore top RAG technology. Create knowledge bases and AIs to empower your business.',
@@ -97,7 +98,8 @@ export default {
       literatureSearch: 'Literature Search',
       cosmosearch: 'CosmoSearch',
       heroTitle: 'Next-Generation AI Search Platform',
-      heroDescription: 'Leverage advanced AI technologies to provide smarter and more accurate literature search and knowledge discovery experiences',
+      heroDescription:
+        'Leverage advanced AI technologies to provide smarter and more accurate literature search and knowledge discovery experiences',
       getStarted: 'Get Started',
     },
     knowledgeList: {
@@ -1844,5 +1846,25 @@ Important structured information may include: names, dates, locations, events, k
       processingFailedTip: 'Total failed processes',
       processing: 'Processing',
     },
+    paperSearch: {
+      title: 'Literature Search',
+      description: 'Search literature and generate survey',
+      newSearch: 'New Search',
+      searchPlaceholder: 'Enter research topic or keywords...',
+      searchResults: 'Search Results',
+      selectForSurvey: 'Select papers to use for survey generation',
+      generateSurvey: 'Generate Survey from Selected Papers',
+      noAbstract: 'No abstract',
+      unknownSource: 'Unknown Source',
+      viewDetails: 'View Details',
+      remove: 'Remove',
+    },
+    dataset: {
+      noDescription: 'No description available',
+    },
+    chunks: 'chunks',
+    updated: 'Updated',
+    seeAll: 'See All',
+    viewDetails: 'View details',
   },
 };

@@ -1,7 +1,7 @@
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ArrowRight, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Button } from '@/components/ui/button';
 import { useNavigate } from 'umi';
 
 function BannerCard() {
@@ -23,9 +23,7 @@ function BannerCard() {
 export function Banner() {
   return (
     <section className="bg-[url('@/assets/banner.png')] bg-cover h-28 rounded-2xl  my-8 flex gap-8 justify-between">
-      <div className="h-full text-3xl font-bold items-center inline-flex ml-6">
-        Welcome to RAGFlow
-      </div>
+      <div className="h-full text-3xl font-bold items-center inline-flex ml-6"></div>
       <div className="flex justify-between items-center gap-4 mr-5">
         <BannerCard></BannerCard>
         <BannerCard></BannerCard>
@@ -55,9 +53,7 @@ export function NextBanner() {
       <span className="pl-3 text-transparent bg-clip-text  bg-gradient-to-l from-[#40EBE3] to-[#4A51FF]">
         {t('header.cosmosearch')}
       </span>
-      <h1 className="text-6xl mt-8 font-bold">
-        {t('header.heroTitle')}
-      </h1>
+      <h1 className="text-6xl mt-8 font-bold">{t('header.heroTitle')}</h1>
       <p className="text-xl mt-6 text-text-secondary max-w-2xl mx-auto">
         {t('header.heroDescription')}
       </p>

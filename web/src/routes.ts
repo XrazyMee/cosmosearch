@@ -67,11 +67,7 @@ const routes = [
     component: '@/pages/chat/share',
     layout: false,
   },
-  {
-    path: Routes.ChatShare,
-    component: `@/pages${Routes.ChatShare}`,
-    layout: false,
-  },
+
   {
     path: Routes.AgentShare,
     component: `@/pages${Routes.AgentShare}`,
@@ -96,17 +92,10 @@ const routes = [
   },
 
   {
-    path: '/chat',
-    component: '@/pages/chat',
-  },
-  {
     path: '/file',
     component: '@/pages/file-manager',
   },
-  {
-    path: Routes.AgentList,
-    component: `@/pages/${Routes.Agents}`,
-  },
+
   {
     path: '/search',
     component: '@/pages/search',
@@ -186,70 +175,7 @@ const routes = [
       },
     ],
   },
-  {
-    path: Routes.Chats,
-    layout: false,
-    component: '@/layouts/next',
-    routes: [
-      {
-        path: Routes.Chats,
-        component: `@/pages${Routes.Chats}`,
-      },
-    ],
-  },
-  {
-    path: Routes.Chat + '/:id',
-    layout: false,
-    component: `@/pages${Routes.Chats}/chat`,
-  },
-  {
-    path: Routes.Searches,
-    layout: false,
-    component: '@/layouts/next',
-    wrappers: ['@/wrappers/auth'],
-    routes: [
-      {
-        path: '',
-        component: `@/pages${Routes.Searches}`,
-      },
-    ],
-  },
-  {
-    path: `${Routes.Search}/:id`,
-    layout: false,
-    component: `@/pages${Routes.Search}`,
-  },
-  {
-    path: `${Routes.SearchShare}`,
-    layout: false,
-    component: `@/pages${Routes.SearchShare}`,
-  },
-  {
-    path: Routes.Agents,
-    layout: false,
-    component: '@/layouts/next',
-    routes: [
-      {
-        path: Routes.Agents,
-        component: `@/pages${Routes.Agents}`,
-      },
-    ],
-  },
-  {
-    path: `${Routes.AgentLogPage}/:id`,
-    layout: false,
-    component: `@/pages${Routes.Agents}${Routes.AgentLogPage}`,
-  },
-  {
-    path: `${Routes.Agent}/:id`,
-    layout: false,
-    component: `@/pages${Routes.Agent}`,
-  },
-  {
-    path: Routes.AgentTemplates,
-    layout: false,
-    component: `@/pages${Routes.Agents}${Routes.AgentTemplates}`,
-  },
+
   {
     path: Routes.Files,
     layout: false,
@@ -345,26 +271,6 @@ const routes = [
       {
         path: `${Routes.ProfileProfile}`,
         component: `@/pages${Routes.ProfileProfile}`,
-      },
-      {
-        path: `${Routes.ProfileTeam}`,
-        component: `@/pages${Routes.ProfileTeam}`,
-      },
-      {
-        path: `${Routes.ProfilePlan}`,
-        component: `@/pages${Routes.ProfilePlan}`,
-      },
-      {
-        path: `${Routes.ProfileModel}`,
-        component: `@/pages${Routes.ProfileModel}`,
-      },
-      {
-        path: `${Routes.ProfilePrompt}`,
-        component: `@/pages${Routes.ProfilePrompt}`,
-      },
-      {
-        path: Routes.ProfileMcp,
-        component: `@/pages${Routes.ProfileMcp}`,
       },
     ],
   },

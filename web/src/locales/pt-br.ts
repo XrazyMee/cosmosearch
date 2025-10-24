@@ -54,7 +54,8 @@ export default {
       nicknamePlaceholder: 'Por favor, insira o apelido',
       register: 'Criar uma conta',
       continue: 'Continuar',
-      title: 'Comece a construir seus assistentes inteligentes.',
+      title: 'Plataforma de busca de literatura AI de próxima geração',
+      heroTitle: 'Plataforma de busca de literatura AI de próxima geração',
       description:
         'Inscreva-se gratuitamente para explorar a tecnologia RAG de ponta. Crie bases de conhecimento e IAs para capacitar seu negócio.',
       review: 'de 500+ avaliações',

@@ -1,34 +1,44 @@
-import React, { useState } from 'react';
-import { Layout, Input, Button, Typography, message } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
-import SearchHistorySidebar from './components/search-history-sidebar';
-import KeywordReview from './components/keyword-review';
-import LiteratureList from './components/literature-list';
-import SurveyResult from './components/survey-result';
+import { Button } from '@/components/ui/button';
+import { SearchInput } from '@/components/ui/input';
 import {
   KeywordGroup,
   Paper,
-  PaperSearchParams,
   PaperSurveyParams,
 } from '@/interfaces/paper-search';
-import { searchPapers, generateSurvey, extractKeywords, searchPapersWithKeywords } from '@/services/paper-search';
+import {
+  extractKeywords,
+  generateSurvey,
+  searchPapersWithKeywords,
+} from '@/services/paper-search';
+import { Layout, Typography, message } from 'antd';
+import { Search } from 'lucide-react';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import KeywordReview from './components/keyword-review';
+import LiteratureList from './components/literature-list';
+import SearchHistorySidebar from './components/search-history-sidebar';
+import SurveyResult from './components/survey-result';
 import './index.css';
 
 const { Header, Content, Sider } = Layout;
 const { Title, Text } = Typography;
-const { Search } = Input;
 
 const PaperSearchPage: React.FC = () => {
+  const { t } = useTranslation();
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchStep, setSearchStep] = useState<'search' | 'keywords' | 'literature' | 'survey'>('search');
+  const [searchStep, setSearchStep] = useState<
+    'search' | 'keywords' | 'literature' | 'survey'
+  >('search');
   const [keywords, setKeywords] = useState<KeywordGroup>({
     keyword_en: [],
     keyword_cn: [],
     searchquery_en: [],
     searchquery_cn: [],
-    time_range: []
+    time_range: [],
   });
-  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(new Set());
+  const [selectedKeywords, setSelectedKeywords] = useState<Set<string>>(
+    new Set(),
+  );
   const [literatureList, setLiteratureList] = useState<Paper[]>([]);
   const [selectedPapers, setSelectedPapers] = useState<Set<string>>(new Set());
   const [surveyResult, setSurveyResult] = useState<any>(null);
@@ -43,7 +53,7 @@ const PaperSearchPage: React.FC = () => {
       const params = {
         query: value,
         keywords_num: 5,
-        query_num: 5
+        query_num: 5,
       };
 
       const data = await extractKeywords(params);
@@ -53,10 +63,18 @@ const PaperSearchPage: React.FC = () => {
 
       // 自动选中所有提取的关键词
       const allKeywordKeys = new Set<string>();
-      data.data.keywords.keyword_en.forEach((_, idx) => allKeywordKeys.add(`keyword_en_${idx}`));
-      data.data.keywords.keyword_cn.forEach((_, idx) => allKeywordKeys.add(`keyword_cn_${idx}`));
-      data.data.keywords.searchquery_en.forEach((_, idx) => allKeywordKeys.add(`searchquery_en_${idx}`));
-      data.data.keywords.searchquery_cn.forEach((_, idx) => allKeywordKeys.add(`searchquery_cn_${idx}`));
+      data.data.keywords.keyword_en.forEach((_, idx) =>
+        allKeywordKeys.add(`keyword_en_${idx}`),
+      );
+      data.data.keywords.keyword_cn.forEach((_, idx) =>
+        allKeywordKeys.add(`keyword_cn_${idx}`),
+      );
+      data.data.keywords.searchquery_en.forEach((_, idx) =>
+        allKeywordKeys.add(`searchquery_en_${idx}`),
+      );
+      data.data.keywords.searchquery_cn.forEach((_, idx) =>
+        allKeywordKeys.add(`searchquery_cn_${idx}`),
+      );
 
       // 自动选中所有自定义关键词
       customKeywords.forEach((_, idx) => allKeywordKeys.add(`custom_${idx}`));
@@ -65,7 +83,7 @@ const PaperSearchPage: React.FC = () => {
 
       setSearchQuery(value); // 保存查询内容
       setSearchStep('keywords'); // 跳转到关键词审核步骤
-      message.success(`关键词提取完成，请选择相关关键词`);
+      message.success(`Keywords extracted. Please select relevant keywords`);
     } catch (error: any) {
       message.error('搜索失败: ' + error.message);
     } finally {
@@ -77,40 +95,60 @@ const PaperSearchPage: React.FC = () => {
     setLoading(true);
     try {
       // 获取用户选中的关键词索引
-      const selectedIndices: Array<{type: string, index: number, selected: boolean}> = [];
+      const selectedIndices: Array<{
+        type: string;
+        index: number;
+        selected: boolean;
+      }> = [];
 
       // 处理英文关键词
       keywords.keyword_en.forEach((_, idx) => {
         if (selectedKeywords.has(`keyword_en_${idx}`)) {
-          selectedIndices.push({type: 'keyword_en', index: idx, selected: true});
+          selectedIndices.push({
+            type: 'keyword_en',
+            index: idx,
+            selected: true,
+          });
         }
       });
 
       // 处理中文关键词
       keywords.keyword_cn.forEach((_, idx) => {
         if (selectedKeywords.has(`keyword_cn_${idx}`)) {
-          selectedIndices.push({type: 'keyword_cn', index: idx, selected: true});
+          selectedIndices.push({
+            type: 'keyword_cn',
+            index: idx,
+            selected: true,
+          });
         }
       });
 
       // 处理英文搜索句
       keywords.searchquery_en.forEach((_, idx) => {
         if (selectedKeywords.has(`searchquery_en_${idx}`)) {
-          selectedIndices.push({type: 'searchquery_en', index: idx, selected: true});
+          selectedIndices.push({
+            type: 'searchquery_en',
+            index: idx,
+            selected: true,
+          });
         }
       });
 
       // 处理中文搜索句
       keywords.searchquery_cn.forEach((_, idx) => {
         if (selectedKeywords.has(`searchquery_cn_${idx}`)) {
-          selectedIndices.push({type: 'searchquery_cn', index: idx, selected: true});
+          selectedIndices.push({
+            type: 'searchquery_cn',
+            index: idx,
+            selected: true,
+          });
         }
       });
 
       // 处理自定义关键词
       customKeywords.forEach((_, idx) => {
         if (selectedKeywords.has(`custom_${idx}`)) {
-          selectedIndices.push({type: 'custom', index: idx, selected: true});
+          selectedIndices.push({ type: 'custom', index: idx, selected: true });
         }
       });
 
@@ -119,7 +157,7 @@ const PaperSearchPage: React.FC = () => {
         query: searchQuery,
         keywords: keywords,
         selected_keyword_indices: selectedIndices,
-        use_fuzzy: true
+        use_fuzzy: true,
       };
 
       const data = await searchPapersWithKeywords(params);
@@ -129,7 +167,9 @@ const PaperSearchPage: React.FC = () => {
       setSearchRecordId(data.data.search_record_id);
 
       setSearchStep('literature'); // 跳转到文献选择步骤
-      message.success(`使用确认的关键词检索到 ${data.data.papers.length} 篇文献`);
+      message.success(
+        `Found ${data.data.papers.length} papers using selected keywords`,
+      );
     } catch (error: any) {
       message.error('文献检索失败: ' + error.message);
     } finally {
@@ -142,17 +182,17 @@ const PaperSearchPage: React.FC = () => {
     try {
       // 获取选中的论文
       const selectedPapersData = literatureList.filter((paper, idx) =>
-        selectedPapers.has(idx.toString())
+        selectedPapers.has(idx.toString()),
       );
 
       if (selectedPapersData.length === 0) {
-        message.warning('请至少选择一篇文献');
+        message.warning('Please select at least one paper');
         setLoading(false);
         return;
       }
 
       if (!searchRecordId) {
-        message.error('未找到搜索记录ID');
+        message.error('Search record ID not found');
         setLoading(false);
         return;
       }
@@ -160,7 +200,7 @@ const PaperSearchPage: React.FC = () => {
       const params: PaperSurveyParams = {
         papers: selectedPapersData,
         title: '文献综述',
-        search_record_id: searchRecordId
+        search_record_id: searchRecordId,
       };
 
       // 调用后端API生成综述（异步任务）
@@ -170,11 +210,13 @@ const PaperSearchPage: React.FC = () => {
       setSurveyResult({
         survey_id: data.data.survey_id,
         task_id: data.data.task_id,
-        status: data.data.status
+        status: data.data.status,
       });
 
       setSearchStep('survey'); // 跳转到综述展示步骤
-      message.success(`综述生成任务已提交，共选择 ${selectedPapersData.length} 篇文献`);
+      message.success(
+        `Survey generation task submitted. Selected ${selectedPapersData.length} papers`,
+      );
     } catch (error: any) {
       message.error('综述生成失败: ' + error.message);
     } finally {
@@ -261,101 +303,136 @@ const PaperSearchPage: React.FC = () => {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Header className="header" style={{ background: '#fff', padding: '0 20px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-        <div style={{ float: 'left', fontSize: '18px', fontWeight: 'bold', lineHeight: '64px' }}>
-          文献检索与综述生成
+      <Header className="bg-white px-8 py-4 shadow-sm">
+        <div className="flex justify-between mb-5 items-center">
+          <div className="text-2xl font-semibold flex items-center gap-2.5">
+            <span className="size-6"></span>
+            {t('header.literatureSearch') ||
+              t('paperSearch.title') ||
+              'Literature Search'}
+          </div>
+          <Button onClick={() => setSearchStep('search')}>
+            <Search className="size-2.5 mr-1" />
+            {t('paperSearch.newSearch') || 'New Search'}
+          </Button>
         </div>
       </Header>
 
       <Layout>
-                <Sider width={300} style={{ background: '#fff', padding: '20px 0' }}>
-          <SearchHistorySidebar onHistoryClick={(surveyId) => {
-            // 处理综述历史点击事件 - 直接跳转到综述结果页面
-            setSurveyResult({
-              survey_id: surveyId
-            });
-            setSearchStep('survey');
-            message.info('正在加载综述...');
-          }} />
+        <Sider width={300} className="bg-white p-6 border-r">
+          <SearchHistorySidebar
+            onHistoryClick={(surveyId) => {
+              // 处理综述历史点击事件 - 直接跳转到综述结果页面
+              setSurveyResult({
+                survey_id: surveyId,
+              });
+              setSearchStep('survey');
+              message.info('Loading survey...');
+            }}
+          />
         </Sider>
 
-        <Layout style={{ padding: '24px' }}>
-          <Content style={{ background: '#fff', padding: '24px', margin: 0, minHeight: 280, borderRadius: 6 }}>
-            {searchStep === 'search' && (
-              <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                <Title level={2}>文献检索与综述生成</Title>
-                <Text type="secondary" style={{ fontSize: '16px', marginBottom: '30px', display: 'block' }}>
-                  输入您的研究主题，我们将帮助您检索相关文献并生成综述
-                </Text>
+        <Layout className="bg-gray-50">
+          <Content className="p-6">
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              {searchStep === 'search' && (
+                <div className="text-center py-10">
+                  <Typography.Title level={2}>
+                    {t('header.literatureSearch') || 'Literature Search'}
+                  </Typography.Title>
+                  <Typography.Text
+                    type="secondary"
+                    className="text-base mb-8 block"
+                  >
+                    {t('paperSearch.description') ||
+                      'Search literature and generate survey'}
+                  </Typography.Text>
 
-                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                  <Search
-                    placeholder="请输入研究主题或关键词..."
-                    size="large"
-                    enterButton={<Button type="primary" icon={<SearchOutlined />} loading={loading}>检索</Button>}
-                    onSearch={handleSearch}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    value={searchQuery}
-                    style={{ marginBottom: '20px' }}
-                  />
+                  <div className="max-w-4xl mx-auto">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-full max-w-2xl">
+                        <SearchInput
+                          placeholder={
+                            t('paperSearch.searchPlaceholder') ||
+                            t('knowledgeList.searchKnowledgePlaceholder') ||
+                            'Enter research topic or keywords...'
+                          }
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="w-full h-14 text-lg"
+                        />
+                      </div>
+                      <Button
+                        onClick={() => handleSearch(searchQuery)}
+                        disabled={!searchQuery.trim()}
+                        loading={loading}
+                        className="px-8 py-6 text-lg"
+                      >
+                        <Search className="size-4 mr-2" />
+                        检索
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {searchStep === 'keywords' && (
-              <KeywordReview
-                keywords={keywords}
-                selectedKeywords={selectedKeywords}
-                toggleKeyword={toggleKeyword}
-                onConfirm={handleKeywordConfirm}
-                loading={loading}
-                onAddCustomKeyword={handleAddCustomKeyword}
-                customKeywords={customKeywords}
-                onRemoveCustomKeyword={handleRemoveCustomKeyword}
-                toggleCustomKeyword={toggleCustomKeyword}
-              />
-            )}
+              {searchStep === 'keywords' && (
+                <KeywordReview
+                  keywords={keywords}
+                  selectedKeywords={selectedKeywords}
+                  toggleKeyword={toggleKeyword}
+                  onConfirm={handleKeywordConfirm}
+                  loading={loading}
+                  onAddCustomKeyword={handleAddCustomKeyword}
+                  customKeywords={customKeywords}
+                  onRemoveCustomKeyword={handleRemoveCustomKeyword}
+                  toggleCustomKeyword={toggleCustomKeyword}
+                />
+              )}
 
-            {searchStep === 'literature' && (
-              <LiteratureList
-                literatureList={literatureList}
-                selectedPapers={selectedPapers}
-                togglePaper={togglePaper}
-                onGenerateSurvey={handleSurveyGeneration}
-                loading={loading}
-                onSelectAll={() => {
-                  const allIndices = literatureList.map((_, idx) => idx.toString());
-                  setSelectedPapers(new Set(allIndices));
-                }}
-                onClearAll={() => {
-                  setSelectedPapers(new Set());
-                }}
-              />
-            )}
+              {searchStep === 'literature' && (
+                <LiteratureList
+                  literatureList={literatureList}
+                  selectedPapers={selectedPapers}
+                  togglePaper={togglePaper}
+                  onGenerateSurvey={handleSurveyGeneration}
+                  loading={loading}
+                  onSelectAll={() => {
+                    const allIndices = literatureList.map((_, idx) =>
+                      idx.toString(),
+                    );
+                    setSelectedPapers(new Set(allIndices));
+                  }}
+                  onClearAll={() => {
+                    setSelectedPapers(new Set());
+                  }}
+                />
+              )}
 
-            {searchStep === 'survey' && (
-              <SurveyResult
-                surveyResult={surveyResult}
-                surveyId={surveyResult?.survey_id}
-                onNewSearch={() => {
-                  setSearchStep('search');
-                  setSearchQuery('');
-                  setKeywords({
-                    keyword_en: [],
-                    keyword_cn: [],
-                    searchquery_en: [],
-                    searchquery_cn: [],
-                    time_range: []
-                  });
-                  setSelectedKeywords(new Set());
-                  setLiteratureList([]);
-                  setSelectedPapers(new Set());
-                  setSurveyResult(null);
-                  setSearchRecordId('');
-                  setCustomKeywords([]); // 清空自定义关键词
-                }}
-              />
-            )}
+              {searchStep === 'survey' && (
+                <SurveyResult
+                  surveyResult={surveyResult}
+                  surveyId={surveyResult?.survey_id}
+                  onNewSearch={() => {
+                    setSearchStep('search');
+                    setSearchQuery('');
+                    setKeywords({
+                      keyword_en: [],
+                      keyword_cn: [],
+                      searchquery_en: [],
+                      searchquery_cn: [],
+                      time_range: [],
+                    });
+                    setSelectedKeywords(new Set());
+                    setLiteratureList([]);
+                    setSelectedPapers(new Set());
+                    setSurveyResult(null);
+                    setSearchRecordId('');
+                    setCustomKeywords([]); // 清空自定义关键词
+                  }}
+                />
+              )}
+            </div>
           </Content>
         </Layout>
       </Layout>

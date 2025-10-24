@@ -57,7 +57,8 @@ export default {
       nicknamePlaceholder: 'Vui lòng nhập biệt danh',
       register: 'Tạo tài khoản',
       continue: 'Tiếp tục',
-      title: 'Bắt đầu xây dựng trợ lý ảo của bạn.',
+      title: 'Nền tảng tìm kiếm tài liệu AI thế hệ mới',
+      heroTitle: 'Nền tảng tìm kiếm tài liệu AI thế hệ mới',
       description:
         'Đăng ký miễn phí để khám phá công nghệ RAG hàng đầu. Tạo cơ sở kiến thức và AI để trao quyền cho doanh nghiệp của bạn.',
       review: 'từ hơn 500 đánh giá',

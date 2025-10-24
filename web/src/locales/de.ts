@@ -60,6 +60,7 @@ export default {
       description:
         'Registrieren Sie sich kostenlos, um führende RAG-Technologie zu erkunden. Erstellen Sie Wissensdatenbanken und KIs, um Ihr Unternehmen zu stärken.',
       review: 'von über 500 Bewertungen',
+      heroTitle: 'Next-Generation AI Literature Search Platform',
     },
     header: {
       knowledgeBase: 'Wissensdatenbank',

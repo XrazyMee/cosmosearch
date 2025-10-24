@@ -92,6 +92,18 @@ MAIL_FRONTEND_URL = ""
 # admin API key
 ADMIN_API_KEY = None
 
+# shared LLM configuration (for unified LLM settings across all users)
+SHARED_LLM_ENABLED = False
+SHARED_LLM_FACTORY = ""
+SHARED_LLM_API_KEY = ""
+SHARED_LLM_BASE_URL = ""
+SHARED_CHAT_MODEL = ""
+SHARED_EMBEDDING_MODEL = ""
+SHARED_RERANK_MODEL = ""
+SHARED_IMAGE2TEXT_MODEL = ""
+SHARED_ASR_MODEL = ""
+SHARED_TTS_MODEL = ""
+
 
 def get_or_create_secret_key():
     secret_key = os.environ.get("RAGFLOW_SECRET_KEY")
@@ -215,7 +227,8 @@ def init_settings():
     MAIL_FRONTEND_URL = SMTP_CONF.get("mail_frontend_url", "")
 
     global ADMIN_API_KEY, DEFAULT_LLM_ID, DEFAULT_EMBD_ID, DEFAULT_ASR_ID, DEFAULT_PARSER_IDS, DEFAULT_IMG2TXT_ID, DEFAULT_RERANK_ID
-    global DEFAULT_API_KEY, TONGYI_API_KEY
+    global DEFAULT_API_KEY, TONGYI_API_KEY, SHARED_LLM_ENABLED, SHARED_LLM_FACTORY, SHARED_LLM_API_KEY, SHARED_LLM_BASE_URL
+    global SHARED_CHAT_MODEL, SHARED_EMBEDDING_MODEL, SHARED_RERANK_MODEL, SHARED_IMAGE2TEXT_MODEL, SHARED_ASR_MODEL, SHARED_TTS_MODEL
     ADMIN_API_KEY = os.environ.get("ADMIN_API_KEY")
 
     # Update default configurations from environment variables
@@ -237,12 +250,24 @@ def init_settings():
     DEFAULT_API_KEY = os.environ.get("DEFAULT_API_KEY", "")
     # Update Tongyi API key from environment variable (specific for Tongyi-Qianwen factory)
     TONGYI_API_KEY = os.environ.get("TONGYI_API_KEY", "")
+    
+    # Unified LLM configuration (for shared configuration across all users)
+    SHARED_LLM_ENABLED = os.environ.get("SHARED_LLM_ENABLED", "").lower() == "true"
+    SHARED_LLM_FACTORY = os.environ.get("SHARED_LLM_FACTORY", "")
+    SHARED_LLM_API_KEY = os.environ.get("SHARED_LLM_API_KEY", "")
+    SHARED_LLM_BASE_URL = os.environ.get("SHARED_LLM_BASE_URL", "")
+    SHARED_CHAT_MODEL = os.environ.get("SHARED_CHAT_MODEL", "")
+    SHARED_EMBEDDING_MODEL = os.environ.get("SHARED_EMBEDDING_MODEL", "")
+    SHARED_RERANK_MODEL = os.environ.get("SHARED_RERANK_MODEL", "")
+    SHARED_IMAGE2TEXT_MODEL = os.environ.get("SHARED_IMAGE2TEXT_MODEL", "")
+    SHARED_ASR_MODEL = os.environ.get("SHARED_ASR_MODEL", "")
+    SHARED_TTS_MODEL = os.environ.get("SHARED_TTS_MODEL", "")
 
     # Log the loaded environment variables
     import logging
 
     logging.info(
-        f"Environment variables loaded - DEFAULT_API_KEY: {'SET' if DEFAULT_API_KEY else 'NOT SET'}, TONGYI_API_KEY: {'SET' if TONGYI_API_KEY else 'NOT SET'}, DEFAULT_LLM_ID: {DEFAULT_LLM_ID}, DEFAULT_EMBD_ID: {DEFAULT_EMBD_ID}"
+        f"Environment variables loaded - DEFAULT_API_KEY: {'SET' if DEFAULT_API_KEY else 'NOT SET'}, TONGYI_API_KEY: {'SET' if TONGYI_API_KEY else 'NOT SET'}, DEFAULT_LLM_ID: {DEFAULT_LLM_ID}, DEFAULT_EMBD_ID: {DEFAULT_EMBD_ID}, SHARED_LLM_ENABLED: {SHARED_LLM_ENABLED}"
     )
 
 
@@ -263,6 +288,18 @@ DEFAULT_RERANK_ID = os.environ.get("DEFAULT_RERANK_ID", getattr(globals(), "RERA
 
 # Default API key that can be overridden by environment variables
 DEFAULT_API_KEY = os.environ.get("DEFAULT_API_KEY", "")
+
+# Shared/unified LLM configuration that can be overridden by environment variables
+SHARED_LLM_ENABLED = os.environ.get("SHARED_LLM_ENABLED", "").lower() == "true"
+SHARED_LLM_FACTORY = os.environ.get("SHARED_LLM_FACTORY", "")
+SHARED_LLM_API_KEY = os.environ.get("SHARED_LLM_API_KEY", "")
+SHARED_LLM_BASE_URL = os.environ.get("SHARED_LLM_BASE_URL", "")
+SHARED_CHAT_MODEL = os.environ.get("SHARED_CHAT_MODEL", "")
+SHARED_EMBEDDING_MODEL = os.environ.get("SHARED_EMBEDDING_MODEL", "")
+SHARED_RERANK_MODEL = os.environ.get("SHARED_RERANK_MODEL", "")
+SHARED_IMAGE2TEXT_MODEL = os.environ.get("SHARED_IMAGE2TEXT_MODEL", "")
+SHARED_ASR_MODEL = os.environ.get("SHARED_ASR_MODEL", "")
+SHARED_TTS_MODEL = os.environ.get("SHARED_TTS_MODEL", "")
 
 
 class CustomEnum(Enum):

@@ -1,3 +1,4 @@
+import { ReactComponent as SearchIcon } from '@/assets/svg/search-icon.svg';
 import SvgIcon from '@/components/svg-icon';
 import { useAuth } from '@/hooks/auth-hooks';
 import {
@@ -94,6 +95,10 @@ const Login = () => {
       <div className={styles.loginLeft}>
         <div className={styles.leftContainer}>
           <div className={styles.loginTitle}>
+            <div className={styles.appLogo}>
+              <SearchIcon width={32} height={32} />
+              <span className={styles.appName}>CosmoSearch</span>
+            </div>
             <div>{title === 'login' ? t('login') : t('register')}</div>
             <span>
               {title === 'login'

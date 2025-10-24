@@ -1,5 +1,5 @@
-import { IconFontFill } from '@/components/icon-font';
 import { CosmoSearchAvatar } from '@/components/cosmosearch-avatar';
+import { IconFontFill } from '@/components/icon-font';
 import ThemeToggle from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Domain } from '@/constants/common';
@@ -11,25 +11,11 @@ import {
 } from '@/hooks/use-user-setting-request';
 import { cn } from '@/lib/utils';
 import { Routes } from '@/routes';
-import { Banknote, Box, Cog, Unplug, User, Users } from 'lucide-react';
+import { User } from 'lucide-react';
 import { useEffect } from 'react';
 import { useHandleMenuClick } from './hooks';
 
-const menuItems = [
-  { icon: User, label: 'Profile', key: Routes.Profile },
-  { icon: Users, label: 'Team', key: Routes.Team },
-  { icon: Box, label: 'Model Providers', key: Routes.Model },
-  { icon: Unplug, label: 'API', key: Routes.Api },
-  // {
-  //   icon: MessageSquareQuote,
-  //   label: 'Prompt Templates',
-  //   key: Routes.Profile,
-  // },
-  // { icon: TextSearch, label: 'Retrieval Templates', key: Routes.Profile },
-  { icon: Cog, label: 'System', key: Routes.System },
-  // { icon: Banknote, label: 'Plan', key: Routes.Plan },
-  { icon: Banknote, label: 'MCP', key: Routes.Mcp },
-];
+const menuItems = [{ icon: User, label: 'Profile', key: Routes.Profile }];
 
 export function SideBar() {
   const pathName = useSecondPathName();

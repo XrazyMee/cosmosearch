@@ -88,7 +88,19 @@ redis:
 #     asr_model:
 #       model: 'whisper-large-v3' # alias of name
 #     image2text_model: ''
-# oauth:
+# unified_llm_config:  # Enable this section to use unified LLM configuration across all users
+#   enabled: false  # Set to true to enable unified configuration, false to use per-tenant configuration
+#   factory: 'OpenAI'  # LLM provider (e.g., OpenAI, Tongyi-Qianwen, etc.)
+#   api_key: 'your-api-key'  # Unified API key for all users
+#   base_url: 'https://api.openai.com/v1'  # Optional base URL for the API
+#   default_models:
+#     chat_model: 'gpt-4o@OpenAI'  # Format: model_name@provider
+#     embedding_model: 'text-embedding-3-small@OpenAI'
+#     rerank_model: 'jina-reranker-v1-turbo-en@Jina'
+#     asr_model: 'whisper-1@OpenAI'
+#     image2text_model: 'gpt-4o@OpenAI'
+#     tts_model: 'tts-1@OpenAI'
+oauth:
 #   oauth2:
 #     display_name: "OAuth2"
 #     client_id: "your_client_id"

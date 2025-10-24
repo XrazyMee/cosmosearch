@@ -53,7 +53,8 @@ export default {
       nicknamePlaceholder: 'ニックネームを入力してください',
       register: 'アカウント作成',
       continue: '続行',
-      title: 'スマートアシスタントの構築を開始しましょう。',
+      title: '次世代AI文献検索プラットフォーム',
+      heroTitle: '次世代AI文献検索プラットフォーム',
       description:
         '無料でサインアップして、最先端のRAGテクノロジーを探索してください。ナレッジベースやAIを作成して、ビジネスを強化しましょう。',
       review: '500件以上のレビューより',
@@ -73,7 +74,8 @@ export default {
       literatureSearch: '文献検索',
       cosmosearch: 'CosmoSearch',
       heroTitle: '次世代AI検索プラットフォーム',
-      heroDescription: '最先端のAI技術を活用し、よりスマートで正確な文献検索および知識発見の体験を提供します',
+      heroDescription:
+        '最先端のAI技術を活用し、よりスマートで正確な文献検索および知識発見の体験を提供します',
       getStarted: '始める',
     },
     knowledgeList: {

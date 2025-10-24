@@ -1,10 +1,9 @@
 import { ReactComponent as FileIcon } from '@/assets/svg/file-management.svg';
-import { ReactComponent as GraphIcon } from '@/assets/svg/graph.svg';
 import { ReactComponent as KnowledgeBaseIcon } from '@/assets/svg/knowledge-base.svg';
 import { useTranslate } from '@/hooks/common-hooks';
 import { useFetchAppConf } from '@/hooks/logic-hooks';
 import { useNavigateWithFromState } from '@/hooks/route-hook';
-import { MessageOutlined, SearchOutlined } from '@ant-design/icons';
+import { SearchOutlined } from '@ant-design/icons';
 import { Flex, Layout, Radio, Space, theme } from 'antd';
 import { MouseEventHandler, useCallback, useMemo } from 'react';
 import { useLocation } from 'umi';
@@ -15,7 +14,7 @@ import styles from './index.less';
 
 const { Header } = Layout;
 
-const RagHeader = () => {
+const CosmoSearchHeader = () => {
   const {
     token: { colorBgContainer },
   } = theme.useToken();
@@ -27,7 +26,11 @@ const RagHeader = () => {
   const tagsData = useMemo(
     () => [
       { path: '/knowledge', name: t('knowledgeBase'), icon: KnowledgeBaseIcon },
-      { path: '/literature-search', name: t('literatureSearch'), icon: SearchOutlined },
+      {
+        path: '/literature-search',
+        name: t('literatureSearch'),
+        icon: SearchOutlined,
+      },
       { path: '/file', name: t('fileManager'), icon: FileIcon },
     ],
     [t],
@@ -111,4 +114,4 @@ const RagHeader = () => {
   );
 };
 
-export default RagHeader;
+export default CosmoSearchHeader;

@@ -18,10 +18,10 @@ const LoginRightPanel = () => {
           level={1}
           className={classNames(styles.white, styles.loginTitle)}
         >
-          {t('title')}
+          CosmoSearch
         </Title>
         <Text className={classNames(styles.pink, styles.loginDescription)}>
-          {t('description')}
+          Next-Generation AI Literature Search Platform
         </Text>
         <Flex align="center" gap={16}>
           <Avatars></Avatars>
