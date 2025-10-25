@@ -75,7 +75,6 @@ export default function Agents() {
           title={t('flow.agents')}
           searchString={searchString}
           onSearchChange={handleInputChange}
-          icon="agent"
           filters={filters}
           onChange={handleFilterSubmit}
           value={filterValue}

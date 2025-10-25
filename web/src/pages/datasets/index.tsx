@@ -63,7 +63,6 @@ export default function Datasets() {
         filters={owners}
         onChange={handleFilterSubmit}
         className="px-8"
-        icon={'data'}
       >
         <Button onClick={showModal}>
           <Plus className=" size-2.5" />

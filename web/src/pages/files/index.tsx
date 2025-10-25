@@ -93,7 +93,6 @@ export default function Files() {
         searchString={searchString}
         onSearchChange={handleInputChange}
         showFilter={false}
-        icon={'file'}
       >
         <DropdownMenu>
           <DropdownMenuTrigger asChild>

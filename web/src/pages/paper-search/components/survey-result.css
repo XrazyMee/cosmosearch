@@ -5,26 +5,26 @@
   color: #333;
 }
 
-/* 文献引用标注样式 */
+/* 文献引用标注样式 - hover only (no click) */
 .citation-ref {
   display: inline-block;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1890ff 0%, #0958d9 100%);
   color: white;
-  padding: 2px 8px;
+  padding: 2px 6px;
   margin: 0 2px;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
-  cursor: pointer;
+  cursor: default;
   transition: all 0.2s ease;
   vertical-align: super;
   line-height: 1;
-  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+  box-shadow: 0 1px 3px rgba(24, 144, 255, 0.3);
 }
 
 .citation-ref:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(135deg, #0958d9 0%, #1890ff 100%);
+  box-shadow: 0 2px 6px rgba(24, 144, 255, 0.4);
   transform: translateY(-1px);
 }
 
@@ -146,4 +146,33 @@
   margin: 16px 0;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+/* 引用列表样式 */
+.references-section {
+  margin-top: 24px;
+}
+
+.references-section .ant-typography {
+  color: #262626;
+  font-weight: 600;
+}
+
+.reference-item {
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.reference-item:last-child {
+  border-bottom: none;
+}
+
+.reference-item span:first-child {
+  color: #1890ff;
+  min-width: 30px;
+}
+
+.reference-item span:last-child {
+  color: #595959;
+  font-size: 14px;
 }

@@ -165,6 +165,32 @@ class PaperSearchService(CommonService):
         return {"search_record_id": search_record_id, "papers": papers, "keywords": keywords_response}
 
     @classmethod
+    def _get_full_document_content(cls, doc_id: str, tenant_id: str, kb_ids: list) -> str:
+        """获取文档的完整内容"""
+        try:
+            from rag.nlp.search import Dealer
+            from api import settings
+            
+            # 使用检索器获取文档的所有块
+            retriever = Dealer(settings.docStoreConn)
+            all_chunks = retriever.chunk_list(doc_id, tenant_id, kb_ids)
+            
+            # 按位置排序并组合完整的文档内容
+            sorted_chunks = sorted(all_chunks, key=lambda x: x.get("position_int", 0))
+            
+            # 组合所有块的内容
+            full_content_parts = []
+            for chunk in sorted_chunks:
+                content = chunk.get("content_with_weight", "")
+                if content:
+                    full_content_parts.append(content)
+            
+            return "\n".join(full_content_parts)
+        except Exception as e:
+            logger.error(f"获取文档完整内容失败: {str(e)}")
+            return ""
+
+    @classmethod
     def search_papers_with_keywords(
         cls,
         search_record_id: str,
@@ -285,6 +311,64 @@ class PaperSearchService(CommonService):
         }
 
     @classmethod
+    def generate_paper_summary(cls, paper: Dict[str, Any], tenant_id: str) -> str:
+        """生成单篇文献简报"""
+        try:
+            # 获取聊天模型
+            from api.db.services.llm_service import LLMBundle
+            from api.db import LLMType
+
+            chat_mdl = LLMBundle(tenant_id, LLMType.CHAT)
+
+            # 构建简报生成提示词
+            title = paper.get("title", "未知标题")
+            content = paper.get("full_content", "") or paper.get("abstract", "")
+            
+            summary_prompt = f"""
+请对以下学术论文生成一份200字左右的简报：
+
+论文标题: {title}
+
+论文内容:
+{content[:4000]}  # 限制内容长度避免超限
+
+请按照以下结构生成简报，确保内容准确反映原文：
+1. **研究主题**：概括论文的核心研究主题
+2. **主要方法**：描述论文采用的主要方法或技术
+3. **关键结果**：总结论文的主要发现或实验结果
+4. **创新点**：指出论文的重要创新或贡献
+5. **应用价值**：说明论文的理论或实践意义
+6. **局限性**：指出论文存在的局限性或待改进之处
+
+请确保简报内容准确、详细、客观，突出论文的核心内容和贡献。
+"""
+
+            # 准备消息历史
+            history = [
+                {
+                    "role": "user",
+                    "content": summary_prompt,
+                }
+            ]
+
+            # 生成简报
+            chat_params = {"temperature": 0.5, "max_tokens": 1024}
+
+            # 设置extra_body参数以支持DashScope
+            extra_body = {"enable_thinking": False}
+            chat_params["extra_body"] = extra_body
+
+            summary_content = chat_mdl.chat("", history, chat_params)
+            
+            return summary_content
+        except Exception as e:
+            logger.error(f"生成单篇文献简报失败: {str(e)}")
+            # 返回基于摘要的简报作为备用方案
+            title = paper.get("title", "未知标题")
+            abstract = paper.get("abstract", "")
+            return f"标题: {title}\n摘要: {abstract}"
+
+    @classmethod
     def generate_survey(cls, survey_record: Dict[str, Any], papers: List[Dict[str, Any]]) -> Dict[str, Any]:
         """生成论文综述"""
         # 保存初始记录
@@ -294,8 +378,29 @@ class PaperSearchService(CommonService):
             # 获取租户信息
             tenant_id = survey_record["tenant_id"]
 
-            # 构建综述生成提示词
-            survey_prompt = cls._build_survey_prompt(papers)
+            # 1. 如果论文没有full_content，获取完整内容
+            updated_papers = []
+            for paper in papers:
+                updated_paper = paper.copy()
+                if not updated_paper.get("full_content"):
+                    # 获取文档完整内容
+                    full_content = cls._get_full_document_content(updated_paper.get("doc_id", ""), tenant_id, [updated_paper.get("kb_id", "")])
+                    if full_content:
+                        updated_paper["full_content"] = full_content
+                updated_papers.append(updated_paper)
+
+            # 2. 生成每篇文献的简报
+            paper_summaries = []
+            for i, paper in enumerate(updated_papers):
+                logger.info(f"正在生成第 {i+1}/{len(updated_papers)} 篇文献的简报")
+                summary = cls.generate_paper_summary(paper, tenant_id)
+                paper_summaries.append({
+                    "title": paper.get("title", "未知标题"),
+                    "summary": summary
+                })
+
+            # 3. 构建综述生成提示词（使用简报而非原文档）
+            survey_prompt = cls._build_survey_prompt_from_summaries(paper_summaries)
 
             # 获取聊天模型
             from api.db.services.llm_service import LLMBundle
@@ -660,11 +765,23 @@ class PaperSearchService(CommonService):
             abstract = paper.get("abstract", "")
             source = paper.get("source", "未知来源")
             similarity = paper.get("similarity", 0.0)
+            # 获取论文全文或详细内容
+            full_content = paper.get("full_content", "")
 
             titles.append(title)
 
-            # 构建详细的论文信息
-            paper_info = f"""
+            # 构建详细的论文信息，优先使用全文内容
+            if full_content:
+                paper_info = f"""
+论文 {i}:
+- 标题: {title}
+- 来源: {source}
+- 相似度: {similarity:.4f}
+- content: {full_content[:2000]}...  # 限制长度以避免超限
+"""
+            else:
+                # 如果没有全文content，则使用摘要
+                paper_info = f"""
 论文 {i}:
 - 标题: {title}
 - 来源: {source}
@@ -681,10 +798,10 @@ class PaperSearchService(CommonService):
 
         return f"""
 ###目标###
-我需要你作为文献综述专家，基于以下{len(papers)}篇学术论文的详细信息，生成一篇结构完整、内容详实的中文文献综述。要求：
+我需要你作为文献综述专家，基于以下{len(papers)}篇学术论文的详细信息，生成一篇结构完整、content详实的中文文献综述。要求：
 1. 深度分析每篇论文的核心观点、技术创新点和研究脉络
-2. 按技术发展/应用场景/研究方法等维度组织内容
-3. 对每项具体技术或观点都要标注引用来源，使用 ##编号$$ 格式
+2. 按技术发展/应用场景/研究方法等维度组织content
+3. 对每项具体技术或观点都要标注引用来源，使用 ##编号$ 格式
 4. 保持学术严谨性，区分作者观点与综合评述
 
 ###指定论文详细信息###
@@ -705,7 +822,7 @@ class PaperSearchService(CommonService):
 采用「总-分-总」结构，包含：
 1. **研究背景**（融合{len(papers)}篇文献的研究动机和问题定义）
 2. **核心技术进展分析**（按主题分类，深入对比各文献的方法创新）
-   - 每个技术点必须引用具体论文内容
+   - 每个技术点必须引用具体论文content
    - 包含具体的技术细节、实验数据、性能对比
    - 分析不同方法的优缺点和适用场景
 3. **技术挑战与局限**（结合各文献指出的问题和瓶颈）
@@ -713,8 +830,8 @@ class PaperSearchService(CommonService):
 
 ###引用规范###
 1. **引用密度**：每个技术点、观点或数据都必须关联≥1篇具体文献
-2. **引用格式**：使用 ##编号$$ 格式，编号从1开始按文献顺序
-3. **内容深度**：引用时要提及具体的技术方法、实验结果或理论观点
+2. **引用格式**：使用 ##编号$ 格式，编号从1开始按文献顺序
+3. **content深度**：引用时要提及具体的技术方法、实验结果或理论观点
 4. **全面覆盖**：确保每一篇指定论文都在综述中被充分分析
 
 ###质量标准###
@@ -726,6 +843,104 @@ class PaperSearchService(CommonService):
 ###格式约束###
 - 使用Markdown格式，标题层级清晰
 - **引用格式**：必须使用 ##编号$$ 格式，编号范围1-{len(papers)}
+- **严格禁止**：添加参考文献列表或References章节
+- **严格禁止**：使用[1]、（1）、文献[1]等其他引用格式
+- 每段content都要有具体的引用支撑
+
+###引用编号对应关系###
+请严格按照以下编号对应关系进行引用：
+{chr(10).join([f"##{i + 1}$$ - {title}" for i, title in enumerate(titles)])}
+
+###示例引用风格###
+正确示例：
+- "该研究提出的注意力机制在BLEU评分上达到了85.3% ##1$$，相比传统方法提升了12.7个百分点。"
+- "##2$$ 的实验表明，多模态融合策略在视觉问答任务中的准确率为91.2%，但在推理时间上增加了约30%的开销。"
+- "三种不同的技术路线显示出各自优势 ##1$$ ##2$$ ##3$$。"
+
+错误示例：
+- "多模态AI是重要研究方向。" （缺乏引用）
+- "文献[1]指出..." （错误的引用格式）
+- "根据文献1的研究..." （错误的引用格式）
+
+请严格按照上述格式要求生成综述。
+"""
+
+    @classmethod
+    def _build_survey_prompt_from_summaries(cls, paper_summaries: List[Dict[str, str]]) -> str:
+        """基于简报构建综述生成提示词"""
+        logger.debug(f"收到{len(paper_summaries)}份文献简报用于构建综述提示词")
+
+        # 构建简报信息
+        summaries_info = []
+        titles = []
+
+        for i, summary_info in enumerate(paper_summaries, 1):
+            title = summary_info.get("title", "未知标题")
+            summary = summary_info.get("summary", "")
+
+            titles.append(title)
+
+            # 构建简报信息
+            summary_text = f"""
+简报 {i}:
+- 标题: {title}
+- 简报: {summary[:2000]}...  # 限制长度以避免超限
+"""
+            summaries_info.append(summary_text)
+
+            logger.debug(f"第{i}份简报: {title}")
+
+        summaries_detail = "\n".join(summaries_info)
+        summaries_titles_str = "、".join(titles)
+        logger.debug(f"构建的简报标题字符串: '{summaries_titles_str}'")
+
+        return f"""
+###目标###
+我需要你作为文献综述专家，基于以下{len(paper_summaries)}份文献简报，生成一篇结构完整、内容详实的中文文献综述。要求：
+1. 深度分析每份简报对应论文的核心观点、技术创新点和研究脉络
+2. 按技术发展/应用场景/研究方法等维度组织内容
+3. 对每项具体技术或观点都要标注引用来源，使用 ##编号$ 格式
+4. 保持学术严谨性，区分作者观点与综合评述
+
+###指定文献简报内容###
+{summaries_detail}
+
+###数据处理要求###
+1. **深度内容提取**：
+   - 提取每篇论文的核心技术方法、实验结果、创新点
+   - 识别论文中的关键数据、性能指标、对比分析
+   - 挖掘论文的技术局限性和未来展望
+
+2. **跨文献对比分析**：
+   - 对比不同论文的技术路线差异
+   - 分析方法演进的时间脉络
+   - 识别研究热点和技术趋势
+
+###结构要求###
+采用「总-分-总」结构，包含：
+1. **研究背景**（融合{len(paper_summaries)}篇文献的研究动机和问题定义）
+2. **核心技术进展分析**（按主题分类，深入对比各文献的方法创新）
+   - 每个技术点必须引用具体论文内容
+   - 包含具体的技术细节、实验数据、性能对比
+   - 分析不同方法的优缺点和适用场景
+3. **技术挑战与局限**（结合各文献指出的问题和瓶颈）
+4. **未来研究方向**（综合各文献的建议和展望）
+
+###引用规范###
+1. **引用密度**：每个技术点、观点或数据都必须关联≥1篇具体文献
+2. **引用格式**：使用 ##编号$$ 格式，编号从1开始按文献顺序
+3. **内容深度**：引用时要提及具体的技术方法、实验结果或理论观点
+4. **全面覆盖**：确保每一份简报对应的论文都在综述中被充分分析
+
+###质量标准###
+1. **具体性**：避免泛泛而谈，要有具体的技术细节和数据支撑
+2. **对比性**：横向对比不同论文的方法差异和性能优劣
+3. **创新性**：突出每篇论文的独特贡献和技术突破
+4. **批判性**：客观分析各方法的局限性和改进空间
+
+###格式约束###
+- 使用Markdown格式，标题层级清晰
+- **引用格式**：必须使用 ##编号$$ 格式，编号范围1-{len(paper_summaries)}
 - **严格禁止**：添加参考文献列表或References章节
 - **严格禁止**：使用[1]、（1）、文献[1]等其他引用格式
 - 每段内容都要有具体的引用支撑
@@ -854,7 +1069,7 @@ class PaperSearchService(CommonService):
         """添加包含引用标记的段落"""
         import re
 
-        # 匹配 ##数字$$ 格式的引用
+        # 匹配 ##数字$ 格式的引用
         citation_pattern = re.compile(r"##(\d+)\$\$")
 
         last_end = 0

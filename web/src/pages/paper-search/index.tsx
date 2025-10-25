@@ -48,6 +48,8 @@ const PaperSearchPage: React.FC = () => {
 
   const handleSearch = async (value: string) => {
     setLoading(true);
+    // 立即切换到关键词审核页面并展示 loading（让用户看到关键词提取正在进行）
+    setSearchStep('keywords');
     try {
       // 调用后端API仅进行关键词提取
       const params = {
@@ -83,9 +85,9 @@ const PaperSearchPage: React.FC = () => {
 
       setSearchQuery(value); // 保存查询内容
       setSearchStep('keywords'); // 跳转到关键词审核步骤
-      message.success(`Keywords extracted. Please select relevant keywords`);
+      message.success(t('paperSearch.keywordsExtracted'));
     } catch (error: any) {
-      message.error('搜索失败: ' + error.message);
+      message.error(t('message.requestError') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -168,10 +170,10 @@ const PaperSearchPage: React.FC = () => {
 
       setSearchStep('literature'); // 跳转到文献选择步骤
       message.success(
-        `Found ${data.data.papers.length} papers using selected keywords`,
+        t('paperSearch.foundPapers', { count: data.data.papers.length }),
       );
     } catch (error: any) {
-      message.error('文献检索失败: ' + error.message);
+      message.error(t('message.requestError') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -186,13 +188,13 @@ const PaperSearchPage: React.FC = () => {
       );
 
       if (selectedPapersData.length === 0) {
-        message.warning('Please select at least one paper');
+        message.warning(t('paperSearch.pleaseSelectAtLeastOnePaper'));
         setLoading(false);
         return;
       }
 
       if (!searchRecordId) {
-        message.error('Search record ID not found');
+        message.error(t('paperSearch.searchRecordNotFound'));
         setLoading(false);
         return;
       }
@@ -215,10 +217,10 @@ const PaperSearchPage: React.FC = () => {
 
       setSearchStep('survey'); // 跳转到综述展示步骤
       message.success(
-        `Survey generation task submitted. Selected ${selectedPapersData.length} papers`,
+        t('paperSearch.surveySubmitted', { count: selectedPapersData.length }),
       );
     } catch (error: any) {
-      message.error('综述生成失败: ' + error.message);
+      message.error(t('message.requestError') + ': ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -305,13 +307,31 @@ const PaperSearchPage: React.FC = () => {
     <Layout style={{ minHeight: '100vh' }}>
       <Header className="bg-white px-8 py-4 shadow-sm">
         <div className="flex justify-between mb-5 items-center">
-          <div className="text-2xl font-semibold flex items-center gap-2.5">
-            <span className="size-6"></span>
+          <div className="text-2xl font-semibold">
             {t('header.literatureSearch') ||
               t('paperSearch.title') ||
               'Literature Search'}
           </div>
-          <Button onClick={() => setSearchStep('search')}>
+          <Button
+            onClick={() => {
+              // Reset all search-related state when starting a new search from header
+              setSearchStep('search');
+              setSearchQuery('');
+              setKeywords({
+                keyword_en: [],
+                keyword_cn: [],
+                searchquery_en: [],
+                searchquery_cn: [],
+                time_range: [],
+              });
+              setSelectedKeywords(new Set());
+              setLiteratureList([]);
+              setSelectedPapers(new Set());
+              setSurveyResult(null);
+              setSearchRecordId('');
+              setCustomKeywords([]);
+            }}
+          >
             <Search className="size-2.5 mr-1" />
             {t('paperSearch.newSearch') || 'New Search'}
           </Button>
@@ -319,7 +339,7 @@ const PaperSearchPage: React.FC = () => {
       </Header>
 
       <Layout>
-        <Sider width={300} className="bg-white p-6 border-r">
+        <Sider width={300} className="bg-white p-6">
           <SearchHistorySidebar
             onHistoryClick={(surveyId) => {
               // 处理综述历史点击事件 - 直接跳转到综述结果页面
@@ -327,14 +347,14 @@ const PaperSearchPage: React.FC = () => {
                 survey_id: surveyId,
               });
               setSearchStep('survey');
-              message.info('Loading survey...');
+              message.info(t('paperSearch.loadingSurvey'));
             }}
           />
         </Sider>
 
         <Layout className="bg-gray-50">
-          <Content className="p-6">
-            <div className="bg-white rounded-lg shadow-sm p-6">
+          <Content className="p-0">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col min-h-0">
               {searchStep === 'search' && (
                 <div className="text-center py-10">
                   <Typography.Title level={2}>
@@ -369,7 +389,7 @@ const PaperSearchPage: React.FC = () => {
                         className="px-8 py-6 text-lg"
                       >
                         <Search className="size-4 mr-2" />
-                        检索
+                        {t('common.search') || '检索'}
                       </Button>
                     </div>
                   </div>

@@ -1,13 +1,23 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { Button, Typography, Space, Card, Spin, message, Progress, Modal } from 'antd';
-import { ReloadOutlined, DownloadOutlined, FileTextOutlined } from '@ant-design/icons';
-import { getSurveyProgress, downloadSurveyDoc } from '@/services/paper-search';
+import { downloadSurveyDoc, getSurveyProgress } from '@/services/paper-search';
+import { DownloadOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  message,
+  Progress,
+  Space,
+  Spin,
+  Tooltip,
+  Typography,
+} from 'antd';
+import 'katex/dist/katex.min.css';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import rehypeRaw from 'rehype-raw';
-import 'katex/dist/katex.min.css';
+import remarkGfm from 'remark-gfm';
+import remarkMath from 'remark-math';
 import './survey-result.css';
 
 const { Title, Text } = Typography;
@@ -15,56 +25,67 @@ const { Title, Text } = Typography;
 interface SurveyResultProps {
   surveyResult: any;
   surveyId?: string;
-  onNewSearch: () => void;
+  onNewSearch?: () => void;
 }
-
-const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onNewSearch }) => {
+const SurveyResult: React.FC<SurveyResultProps> = ({
+  surveyId,
+}: SurveyResultProps) => {
   const [surveyContent, setSurveyContent] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
-  const [status, setStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'>('pending');
+  const [status, setStatus] = useState<
+    'pending' | 'processing' | 'completed' | 'failed' | 'cancelled'
+  >('pending');
   const [progress, setProgress] = useState<number>(0);
-  const [progressMsg, setProgressMsg] = useState<string>('等待处理');
-  const [hasShownCompleteMessage, setHasShownCompleteMessage] = useState<boolean>(false);
-  const [paperReferences, setPaperReferences] = useState<{ [key: number]: string }>({});
+  const { t } = useTranslation();
+  const [progressMsg, setProgressMsg] = useState<string>(
+    t('paperSearch.waiting'),
+  );
+  const [hasShownCompleteMessage, setHasShownCompleteMessage] =
+    useState<boolean>(false);
   const [papers, setPapers] = useState<any[]>([]);
 
-  // 处理综述内容，提取引用信息并转换引用标注为 HTML
-  const processedContent = useMemo(() => {
-    if (!surveyContent) return '';
+  // 处理综述内容，提取引用信息
+  const { processedContent, citationMap } = useMemo(() => {
+    if (!surveyContent) {
+      return { processedContent: '', citationMap: {} };
+    }
+
+    let refs: Record<string, string> = {};
 
     // 优先使用从后端返回的文献列表构建引用映射
     if (papers && papers.length > 0) {
-      const refs: { [key: number]: string } = {};
+      refs = {};
       papers.forEach((paper, index) => {
         refs[index + 1] = paper.title || '未知标题';
       });
-      setPaperReferences(refs);
     } else {
       // 如果没有文献列表，尝试从综述内容中提取引用编号对应关系
       const refPattern = /##(\d+)\$\$ - (.+?)(?:\n|$)/g;
-      const refs: { [key: number]: string } = {};
       let match;
+      const tempRefs: Record<string, string> = {};
 
       let tempContent = surveyContent;
       while ((match = refPattern.exec(tempContent)) !== null) {
         const num = parseInt(match[1]);
         const title = match[2].trim();
-        refs[num] = title;
+        tempRefs[num] = title;
       }
 
-      setPaperReferences(refs);
+      refs = tempRefs;
     }
 
+    // no-op: refs is returned via citationMap for rendering
+
     // 移除引用编号对应关系部分（如果存在）
-    let content = surveyContent.replace(/###引用编号对应关系###[\s\S]*?(?=###|$)/g, '');
+    let content = surveyContent.replace(
+      /###引用编号对应关系###[\s\S]*?(?=###|$)/g,
+      '',
+    );
 
-    // 将 ##数字$$ 格式转换为 HTML span 标签以便正确渲染
-    // 匹配单个或多个引用，例如: ##1$$ 或 ##1## ##2## ##3##
-    content = content.replace(/##(\d+)\$\$/g, (match, num) => {
-      return `<span class="citation-ref" data-ref="${num}" title="点击查看引用详情">[${num}]</span>`;
-    });
+    // 将 ##数字$$ 格式转换为内联代码格式，标记为 [CITATION:数字]，方便自定义渲染器识别
+    content = content.replace(/##(\d+)\$\$/g, '`[CITATION:$1]`');
 
-    return content;
+    return { processedContent: content, citationMap: refs };
   }, [surveyContent, papers]);
 
   // 当surveyId存在时，开始轮询获取综述进度
@@ -104,7 +125,7 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
 
           // 只在第一次完成时显示消息
           if (!hasShownCompleteMessage) {
-            message.success('综述生成完成');
+            message.success(t('paperSearch.surveyCompleted'));
             setHasShownCompleteMessage(true);
           }
 
@@ -117,7 +138,9 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
           setLoading(false);
 
           if (!hasShownCompleteMessage) {
-            message.error(`综述生成失败: ${progressData.progress_msg}`);
+            message.error(
+              t('paperSearch.surveyFailed') + ': ' + progressData.progress_msg,
+            );
             setHasShownCompleteMessage(true);
           }
 
@@ -129,7 +152,7 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
           setLoading(false);
 
           if (!hasShownCompleteMessage) {
-            message.warning('综述生成已取消');
+            message.warning(t('paperSearch.surveyCancelled'));
             setHasShownCompleteMessage(true);
           }
 
@@ -141,7 +164,9 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
       } catch (error: any) {
         if (!isMounted) return;
 
-        message.error('获取综述进度失败: ' + error.message);
+        message.error(
+          t('paperSearch.getProgressFailed') + ': ' + error.message,
+        );
         setLoading(false);
 
         if (timer) {
@@ -166,7 +191,7 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
         clearInterval(timer);
       }
     };
-  }, [surveyId, hasShownCompleteMessage]);
+  }, [surveyId, hasShownCompleteMessage, t]);
 
   // 下载综述文档
   const handleDownload = async () => {
@@ -178,101 +203,37 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `文献综述_${new Date().getTime()}.docx`;
+      a.download = `${t('paperSearch.exportFileNamePrefix')}_${new Date().getTime()}.docx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      message.success('下载成功');
+      message.success(t('paperSearch.downloadSuccess'));
     } catch (error: any) {
       console.error('下载失败:', error);
-      message.error('下载失败: ' + error.message);
+      message.error(t('paperSearch.downloadFailed') + ': ' + error.message);
     }
   };
 
-  // 添加引用点击事件监听
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains('citation-ref')) {
-        const refNum = target.getAttribute('data-ref');
-        if (refNum) {
-          const num = parseInt(refNum);
-          const title = paperReferences[num];
-          const paper = papers[num - 1]; // 数组索引从0开始
-
-          if (paper) {
-            // 显示完整的文献信息弹窗
-            Modal.info({
-              title: `引用文献 [${refNum}]`,
-              width: 600,
-              icon: <FileTextOutlined style={{ color: '#1890ff' }} />,
-              content: (
-                <div style={{ marginTop: '16px' }}>
-                  <p><strong>标题：</strong>{paper.title || '未知标题'}</p>
-                  {paper.abstract && (
-                    <p><strong>摘要：</strong>{paper.abstract}</p>
-                  )}
-                  {paper.source && (
-                    <p><strong>来源：</strong>{paper.source}</p>
-                  )}
-                  {paper.similarity !== undefined && (
-                    <p><strong>相似度：</strong>{(paper.similarity * 100).toFixed(2)}%</p>
-                  )}
-                </div>
-              ),
-            });
-          } else if (title) {
-            // 如果没有完整的paper对象，只显示标题
-            Modal.info({
-              title: `引用文献 [${refNum}]`,
-              content: title,
-            });
-          } else {
-            message.warning(`未找到引用 [${refNum}] 的详细信息`);
-          }
-        }
-      }
-    };
-
-    document.addEventListener('click', handleClick);
-    return () => {
-      document.removeEventListener('click', handleClick);
-    };
-  }, [paperReferences, papers]);
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 180px)' }}>
-      <div style={{
-        textAlign: 'center',
-        marginBottom: '20px',
-        paddingBottom: '20px',
-        borderBottom: '1px solid #f0f0f0'
-      }}>
-        <Title level={2}>文献综述结果</Title>
+    <div className="flex flex-col h-full max-h-[calc(100vh-180px)]">
+      <div className="text-center mb-0 pb-3 border-b border-gray-200">
+        <Title level={2}>{t('paperSearch.surveyResultTitle')}</Title>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={onNewSearch}>
-            重新检索
-          </Button>
           {status === 'completed' && (
             <Button icon={<DownloadOutlined />} onClick={handleDownload}>
-              下载Word文档
+              {t('paperSearch.downloadWord')}
             </Button>
           )}
         </Space>
       </div>
 
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '0 10px',
-        maxHeight: 'calc(100vh - 280px)'
-      }}>
+      <div className="flex-1 overflow-y-auto px-2.5 max-h-[calc(100vh-280px)] border border-gray-200 rounded-md p-4">
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px' }}>
+          <div className="text-center p-10">
             <Spin size="large" />
-            <div style={{ marginTop: '20px', maxWidth: '400px', margin: '20px auto' }}>
+            <div className="mt-5 max-w-[400px] mx-auto my-5">
               <Progress
                 percent={Math.round(progress)}
                 status={status === 'failed' ? 'exception' : 'active'}
@@ -281,35 +242,92 @@ const SurveyResult: React.FC<SurveyResultProps> = ({ surveyResult, surveyId, onN
                   '100%': '#87d068',
                 }}
               />
-              <Text type="secondary" style={{ display: 'block', marginTop: '10px' }}>
-                {progressMsg || '正在生成文献综述，请稍候...'}
+              <Text type="secondary" className="block mt-2.5">
+                {progressMsg || t('paperSearch.surveyGenerating')}
               </Text>
             </div>
           </div>
         ) : (
-          <Card style={{ borderRadius: '8px' }}>
+          <Card className="rounded-lg h-full">
             {status === 'completed' ? (
               <div className="markdown-content">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm, remarkMath]}
                   rehypePlugins={[rehypeKatex, rehypeRaw]}
                   components={{
-                    h1: ({...props}) => <Title level={2} style={{ marginTop: '24px', marginBottom: '16px' }} {...props} />,
-                    h2: ({...props}) => <Title level={3} style={{ marginTop: '20px', marginBottom: '12px' }} {...props} />,
-                    h3: ({...props}) => <Title level={4} style={{ marginTop: '16px', marginBottom: '10px' }} {...props} />,
-                    h4: ({...props}) => <Title level={5} style={{ marginTop: '12px', marginBottom: '8px' }} {...props} />,
+                    h1: ({ ...props }) => (
+                      <Title level={2} className="mt-6 mb-4" {...props} />
+                    ),
+                    h2: ({ ...props }) => (
+                      <Title level={3} className="mt-5 mb-3" {...props} />
+                    ),
+                    h3: ({ ...props }) => (
+                      <Title level={4} className="mt-4 mb-2.5" {...props} />
+                    ),
+                    h4: ({ ...props }) => (
+                      <Title level={5} className="mt-3 mb-2" {...props} />
+                    ),
+                    // Custom component for inline code that handles citations
+                    code: ({ ...props }) => {
+                      // Check if this code element matches the citation pattern
+                      if (typeof props.children === 'string') {
+                        const citationMatch =
+                          props.children.match(/\[CITATION:(\d+)\]/);
+                        if (citationMatch) {
+                          const citationNum = citationMatch[1];
+                          const title =
+                            citationMap[citationNum] ||
+                            `Reference ${citationNum}`;
+                          return (
+                            <Tooltip title={title}>
+                              <span className="citation-ref">
+                                [{citationNum}]
+                              </span>
+                            </Tooltip>
+                          );
+                        }
+                      }
+                      // For non-citation code, render normally
+                      return <code {...props} />;
+                    },
                   }}
                 >
                   {processedContent}
                 </ReactMarkdown>
+
+                {/* 引用列表 */}
+                {Object.keys(citationMap).length > 0 && (
+                  <div className="references-section mt-8 pt-6 border-t border-gray-200">
+                    <Title level={3} className="mb-4">
+                      {t('paperSearch.references')}
+                    </Title>
+                    <div className="space-y-2">
+                      {Object.entries(citationMap)
+                        .sort(([a], [b]) => parseInt(a) - parseInt(b)) // 按引用编号排序
+                        .map(([num, title]) => (
+                          <div
+                            key={num}
+                            className="reference-item flex items-start"
+                          >
+                            <span className="mr-2 font-semibold">[{num}]</span>
+                            <span className="flex-1">{title as string}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : status === 'failed' ? (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <Text type="danger">综述生成失败: {progressMsg}</Text>
+              <div className="text-center p-10">
+                <Text type="danger">
+                  {t('paperSearch.surveyFailed')}: {progressMsg}
+                </Text>
               </div>
             ) : (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
-                <Text type="secondary">综述仍在生成中，请稍后再来查看...</Text>
+              <div className="text-center p-10">
+                <Text type="secondary">
+                  {t('paperSearch.surveyInProgress')}
+                </Text>
               </div>
             )}
           </Card>

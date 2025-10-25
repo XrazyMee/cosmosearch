@@ -17,7 +17,6 @@ import { Routes } from '@/routes';
 import { camelCase } from 'lodash';
 import {
   ChevronDown,
-  CircleHelp,
   File,
   House,
   Library,
@@ -29,10 +28,6 @@ import React, { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'umi';
 import { BellButton } from './bell-button';
-
-const handleDocHelpCLick = () => {
-  window.open('https://ragflow.io/docs/dev/category/guides', 'target');
-};
 
 export function Header() {
   const { t } = useTranslation();
@@ -128,9 +123,7 @@ export function Header() {
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-        <Button variant={'ghost'} onClick={handleDocHelpCLick}>
-          <CircleHelp />
-        </Button>
+
         <Button variant={'ghost'} onClick={onThemeClick}>
           {theme === 'light' ? <Sun /> : <Moon />}
         </Button>

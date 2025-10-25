@@ -94,12 +94,13 @@ export function PaperCard({
 }
 
 export function SeeAllCard() {
-  const { navigateToSearch } = useNavigatePage();
+  const { navigateToSearchList } = useNavigatePage();
+  const { t } = useTranslation();
 
   return (
-    <Card className="w-40 flex-none h-full" onClick={navigateToSearch}>
+    <Card className="w-40 flex-none h-full" onClick={navigateToSearchList}>
       <CardContent className="p-2.5 pt-1 w-full h-full flex items-center justify-center gap-1.5 text-text-secondary">
-        See All <ChevronRight className="size-4" />
+        {t('common.seeAll') || 'See All'} <ChevronRight className="size-4" />
       </CardContent>
     </Card>
   );

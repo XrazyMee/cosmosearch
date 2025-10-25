@@ -791,17 +791,66 @@ async def handle_survey_task(task):
         if has_canceled(task_id):
             raise TaskCanceledException("任务已取消")
 
-        # 阶段2: 构建提示词 (10%)
-        set_progress(task_id, prog=0.10, msg="正在构建综述提示词...")
-        survey_prompt = PaperSearchService._build_survey_prompt(papers)
+        # 阶段2: 获取每篇文献的完整内容 (10%)
+        set_progress(task_id, prog=0.10, msg="正在获取每篇文献的完整内容...")
+        PaperSurveyRecord.update(progress=0.10, progress_msg="正在获取完整内容").where(PaperSurveyRecord.id == survey_id).execute()
 
-        PaperSurveyRecord.update(progress=0.10, progress_msg="已构建提示词").where(PaperSurveyRecord.id == survey_id).execute()
+        # 如果论文没有full_content，获取完整内容
+        updated_papers = []
+        for i, paper in enumerate(papers):
+            updated_paper = paper.copy()
+            if not updated_paper.get("full_content"):
+                # 获取文档完整内容
+                full_content = PaperSearchService._get_full_document_content(updated_paper.get("doc_id", ""), tenant_id, [updated_paper.get("kb_id", "")])
+                if full_content:
+                    updated_paper["full_content"] = full_content
+            updated_papers.append(updated_paper)
 
+        # 检查是否取消
         if has_canceled(task_id):
             raise TaskCanceledException("任务已取消")
 
-        # 阶段3: 调用 LLM 生成 (10% - 90%)
-        set_progress(task_id, prog=0.20, msg="正在调用 LLM 生成综述...")
+        # 阶段3: 生成每篇文献的简报 (10% - 60%)
+        set_progress(task_id, prog=0.15, msg="正在生成每篇文献的简报...")
+        PaperSurveyRecord.update(progress=0.15, progress_msg="正在生成简报").where(PaperSurveyRecord.id == survey_id).execute()
+
+        # 生成每篇文献的简报
+        paper_summaries = []
+        total_papers = len(updated_papers)
+        for i, paper in enumerate(updated_papers):
+            # 更新进度
+            progress = 0.15 + (i / total_papers) * 0.45  # 从15%到60%的进度范围
+            set_progress(task_id, prog=progress, msg=f"正在生成第 {i+1}/{total_papers} 篇文献简报...")
+            PaperSurveyRecord.update(progress=progress, progress_msg=f"生成简报 ({i+1}/{total_papers})").where(PaperSurveyRecord.id == survey_id).execute()
+
+            # 检查是否取消
+            if has_canceled(task_id):
+                raise TaskCanceledException("任务已取消")
+
+            # 生成简报
+            summary = PaperSearchService.generate_paper_summary(paper, tenant_id)
+            paper_summaries.append({
+                "title": paper.get("title", "未知标题"),
+                "summary": summary
+            })
+
+        # 检查是否取消
+        if has_canceled(task_id):
+            raise TaskCanceledException("任务已取消")
+
+        # 阶段4: 构建综述提示词 (60% - 65%)
+        set_progress(task_id, prog=0.65, msg="正在基于简报构建综述提示词...")
+        PaperSurveyRecord.update(progress=0.65, progress_msg="正在构建综述提示词").where(PaperSurveyRecord.id == survey_id).execute()
+
+        # 基于简报构建综述生成提示词
+        survey_prompt = PaperSearchService._build_survey_prompt_from_summaries(paper_summaries)
+
+        # 检查是否取消
+        if has_canceled(task_id):
+            raise TaskCanceledException("任务已取消")
+
+        # 阶段5: 调用 LLM 生成综述 (65% - 90%)
+        set_progress(task_id, prog=0.70, msg="正在调用 LLM 生成综述...")
 
         # 获取聊天模型
         chat_mdl = LLMBundle(tenant_id, LLMType.CHAT)
@@ -816,13 +865,13 @@ async def handle_survey_task(task):
         async def update_llm_progress():
             """模拟 LLM 生成进度更新"""
             try:
-                for i in range(3, 9):
+                for i in range(7, 9):
                     await trio.sleep(5)  # 每5秒更新一次
                     if stop_progress_update.is_set():
                         break
                     if has_canceled(task_id):
                         break
-                    progress = i * 0.1
+                    progress = 0.70 + (i - 7) * 0.1  # 从70%到90%
                     set_progress(task_id, prog=progress, msg=f"LLM 生成中... {int(progress * 100)}%")
                     PaperSurveyRecord.update(progress=progress, progress_msg=f"生成中 {int(progress * 100)}%").where(PaperSurveyRecord.id == survey_id).execute()
             except Exception as e:
@@ -843,7 +892,7 @@ async def handle_survey_task(task):
         if has_canceled(task_id):
             raise TaskCanceledException("任务已取消")
 
-        # 阶段4: 保存结果 (95% - 100%)
+        # 阶段6: 保存结果 (95% - 100%)
         set_progress(task_id, prog=0.95, msg="正在保存综述结果...")
 
         # 计算处理耗时

@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
-import { Card, Typography, Space, Tag, Button, Row, Col, Divider, ConfigProvider, Input, message } from 'antd';
-import { CheckCircleOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { KeywordGroup } from '@/interfaces/paper-search';
+import {
+  CheckCircleOutlined,
+  EditOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
+import {
+  Button,
+  ConfigProvider,
+  Divider,
+  Input,
+  message,
+  Space,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 const { Title, Text } = Typography;
 
@@ -26,29 +41,75 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
   onAddCustomKeyword,
   customKeywords,
   onRemoveCustomKeyword,
-  toggleCustomKeyword
+  toggleCustomKeyword,
 }) => {
-  const { keyword_en = [], keyword_cn = [], searchquery_en = [], searchquery_cn = [], time_range = [] } = keywords;
+  const { t } = useTranslation();
+  const {
+    keyword_en = [],
+    keyword_cn = [],
+    searchquery_en = [],
+    searchquery_cn = [],
+    time_range = [],
+  } = keywords;
 
   const allKeywords = [
-    ...keyword_en.map((kw, idx) => ({ text: kw, type: 'keyword_en', index: idx, category: '关键词(英文)' })),
-    ...keyword_cn.map((kw, idx) => ({ text: kw, type: 'keyword_cn', index: idx, category: '关键词(中文)' })),
-    ...searchquery_en.map((kw, idx) => ({ text: kw, type: 'searchquery_en', index: idx, category: '搜索句(英文)' })),
-    ...searchquery_cn.map((kw, idx) => ({ text: kw, type: 'searchquery_cn', index: idx, category: '搜索句(中文)' }))
+    ...keyword_en.map((kw, idx) => ({
+      text: kw,
+      type: 'keyword_en',
+      index: idx,
+      category: 'keyword_en',
+    })),
+    ...keyword_cn.map((kw, idx) => ({
+      text: kw,
+      type: 'keyword_cn',
+      index: idx,
+      category: 'keyword_cn',
+    })),
+    ...searchquery_en.map((kw, idx) => ({
+      text: kw,
+      type: 'searchquery_en',
+      index: idx,
+      category: 'searchquery_en',
+    })),
+    ...searchquery_cn.map((kw, idx) => ({
+      text: kw,
+      type: 'searchquery_cn',
+      index: idx,
+      category: 'searchquery_cn',
+    })),
   ];
 
   // 添加自定义关键词的输入状态
   const [customKeywordInput, setCustomKeywordInput] = useState<string>('');
 
+  const isKeywordsEmpty =
+    (!keyword_en || keyword_en.length === 0) &&
+    (!keyword_cn || keyword_cn.length === 0) &&
+    (!searchquery_en || searchquery_en.length === 0) &&
+    (!searchquery_cn || searchquery_cn.length === 0) &&
+    (!customKeywords || customKeywords.length === 0);
+
+  // 当处于 loading 且关键词尚未返回时，显示加载占位
+  if (loading && isKeywordsEmpty) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[320px]">
+        <Spin size="large" />
+        <div className="mt-3 text-gray-500">
+          {t('paperSearch.extractingKeywords')}
+        </div>
+      </div>
+    );
+  }
+
   // 处理添加自定义关键词
   const handleAddCustomKeyword = () => {
     if (!customKeywordInput.trim()) {
-      message.warning('请输入关键词');
+      message.warning(t('paperSearch.enterKeyword'));
       return;
     }
 
     if (customKeywords.includes(customKeywordInput.trim())) {
-      message.warning('此关键词已存在');
+      message.warning(t('paperSearch.keywordExists'));
       return;
     }
 
@@ -73,33 +134,29 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
         },
       }}
     >
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: 'calc(100vh - 180px)' }}>
+      <div className="flex flex-col h-full max-h-[calc(100vh-180px)]">
         <div>
-          <Title level={2} style={{ textAlign: 'center', marginBottom: '10px' }}>关键词审核</Title>
-          <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginBottom: '20px' }}>
-            请选择与您研究主题相关的关键词，这些关键词将用于文献检索
+          <Title level={2} className="text-center mb-2.5">
+            {t('paperSearch.keywordReviewTitle')}
+          </Title>
+          <Text type="secondary" className="block text-center mb-5">
+            {t('paperSearch.keywordReviewDescription')}
           </Text>
         </div>
 
-        <div style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '0 10px 20px',
-          marginBottom: '20px',
-          maxHeight: 'calc(100vh - 280px)'
-        }}>
+        <div className="flex-1 overflow-y-auto px-2.5 pb-5 mb-5 max-h-[calc(100vh-280px)] border border-gray-200 rounded-md p-4">
           {/* 手动输入关键词区域 */}
-          <div style={{ marginBottom: '20px', padding: '15px', background: '#f9f9f9', borderRadius: '6px' }}>
-            <div style={{ marginBottom: '10px' }}>
-              <Text strong>手动添加关键词</Text>
+          <div className="mb-5 p-4 bg-gray-50 rounded-md">
+            <div className="mb-2.5">
+              <Text strong>{t('paperSearch.manualAddTitle')}</Text>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <div className="flex gap-2.5 items-center">
               <Input
-                placeholder="输入自定义关键词"
+                placeholder={t('paperSearch.customKeywordPlaceholder')}
                 value={customKeywordInput}
                 onChange={(e) => setCustomKeywordInput(e.target.value)}
                 onKeyPress={handleKeyPress}
-                style={{ flex: 1 }}
+                className="flex-1"
               />
               <Button
                 type="primary"
@@ -107,15 +164,17 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
                 onClick={handleAddCustomKeyword}
                 disabled={!customKeywordInput.trim()}
               >
-                添加
+                {t('paperSearch.add')}
               </Button>
             </div>
 
             {/* 显示已添加的自定义关键词 */}
             {customKeywords.length > 0 && (
-              <div style={{ marginTop: '15px' }}>
-                <Divider orientation="left" style={{ marginTop: '10px' }}>自定义关键词</Divider>
-                <Space wrap style={{ marginBottom: '10px' }}>
+              <div className="mt-3">
+                <Divider orientation="left" className="mt-2.5">
+                  {t('paperSearch.customKeywords')}
+                </Divider>
+                <Space wrap className="mb-2.5">
                   {customKeywords.map((keyword, idx) => {
                     const key = `custom_${idx}`;
                     const isSelected = selectedKeywords.has(key);
@@ -129,15 +188,15 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
                           e.preventDefault();
                           onRemoveCustomKeyword(idx);
                         }}
-                        style={{
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          padding: '8px 12px',
-                          borderRadius: '20px',
-                          border: '2px solid transparent'
-                        }}
+                        className="cursor-pointer text-sm px-3 py-2 rounded-full"
                         onClick={() => toggleCustomKeyword('custom', idx)}
-                        icon={isSelected ? <CheckCircleOutlined /> : <EditOutlined />}
+                        icon={
+                          isSelected ? (
+                            <CheckCircleOutlined />
+                          ) : (
+                            <EditOutlined />
+                          )
+                        }
                       >
                         {keyword}
                       </Tag>
@@ -148,16 +207,29 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
             )}
           </div>
 
-          <div style={{ marginBottom: '20px' }}>
-            {['关键词(英文)', '关键词(中文)', '搜索句(英文)', '搜索句(中文)'].map(category => {
-              const categoryKeywords = allKeywords.filter(kw => kw.category === category);
+          <div className="mb-5">
+            {[
+              { id: 'keyword_en', label: t('paperSearch.keywordEnCategory') },
+              { id: 'keyword_cn', label: t('paperSearch.keywordCnCategory') },
+              {
+                id: 'searchquery_en',
+                label: t('paperSearch.searchQueryEnCategory'),
+              },
+              {
+                id: 'searchquery_cn',
+                label: t('paperSearch.searchQueryCnCategory'),
+              },
+            ].map((category) => {
+              const categoryKeywords = allKeywords.filter(
+                (kw) => kw.category === category.id,
+              );
               if (categoryKeywords.length === 0) return null;
 
               return (
-                <div key={category} style={{ marginBottom: '20px' }}>
-                  <Divider orientation="left">{category}</Divider>
-                  <Space wrap style={{ marginBottom: '10px' }}>
-                    {categoryKeywords.map((kw, idx) => {
+                <div key={category.id} className="mb-5">
+                  <Divider orientation="left">{category.label}</Divider>
+                  <Space wrap className="mb-2.5">
+                    {categoryKeywords.map((kw) => {
                       const key = `${kw.type}_${kw.index}`;
                       const isSelected = selectedKeywords.has(key);
 
@@ -166,15 +238,15 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
                           key={key}
                           color={isSelected ? 'blue' : 'default'}
                           closable={false}
-                          style={{
-                            cursor: 'pointer',
-                            fontSize: '14px',
-                            padding: '8px 12px',
-                            borderRadius: '20px',
-                            border: '2px solid transparent'
-                          }}
+                          className="cursor-pointer text-sm px-3 py-2 rounded-full"
                           onClick={() => toggleKeyword(kw.type, kw.index)}
-                          icon={isSelected ? <CheckCircleOutlined /> : <EditOutlined />}
+                          icon={
+                            isSelected ? (
+                              <CheckCircleOutlined />
+                            ) : (
+                              <EditOutlined />
+                            )
+                          }
                         >
                           {kw.text}
                         </Tag>
@@ -187,11 +259,15 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
           </div>
 
           {time_range && time_range.length > 0 && (
-            <div style={{ marginBottom: '20px' }}>
-              <Divider orientation="left">时间范围</Divider>
+            <div className="mb-5">
+              <Divider orientation="left">{t('paperSearch.timeRange')}</Divider>
               <Space wrap>
                 {time_range.map((year, idx) => (
-                  <Tag key={`year_${idx}`} color="green" style={{ fontSize: '14px', padding: '8px 12px' }}>
+                  <Tag
+                    key={`year_${idx}`}
+                    color="green"
+                    className="text-sm px-3 py-2"
+                  >
                     {year}年
                   </Tag>
                 ))}
@@ -200,15 +276,7 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
           )}
         </div>
 
-        <div style={{
-          textAlign: 'center',
-          padding: '20px 0 0',
-          borderTop: '1px solid #f0f0f0',
-          position: 'sticky',
-          bottom: 0,
-          background: '#fff',
-          zIndex: 10
-        }}>
+        <div className="text-center pt-5 border-t border-gray-200 sticky bottom-0 bg-white z-10">
           <Button
             type="primary"
             size="large"
@@ -216,10 +284,14 @@ const KeywordReview: React.FC<KeywordReviewProps> = ({
             loading={loading}
             disabled={selectedKeywords.size === 0}
           >
-            确认选择并检索文献
+            {t('paperSearch.confirmAndSearch')}
           </Button>
-          <div style={{ marginTop: '10px' }}>
-            <Text type="secondary">已选择 {selectedKeywords.size} 个关键词</Text>
+          <div className="mt-2.5">
+            <Text type="secondary">
+              {t('paperSearch.selectedKeywords', {
+                count: selectedKeywords.size,
+              })}
+            </Text>
           </div>
         </div>
       </div>

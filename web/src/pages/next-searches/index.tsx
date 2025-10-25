@@ -48,7 +48,6 @@ export default function SearchList() {
     <section className="w-full h-full flex flex-col">
       <div className="px-8 pt-8">
         <ListFilterBar
-          icon="search"
           title={t('searchApps')}
           showFilter={false}
           onSearchChange={(e) => handleSearchChange(e.target.value)}
